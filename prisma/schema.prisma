@@ -1,0 +1,124 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model BusinessSettings {
+  id                  Int      @id @default(1)
+  cafe_name           String   @default("La Nouvelle Café & Restaurant")
+  tagline             String   @default("Artisan Wood-Fired Pizza, Prime Steaks & Bistro Cuisine")
+  about               String   @default("An extraordinary culinary destination blending Parisian bistro warmth with contemporary international fine dining in Bole, Addis Ababa.")
+  phone               String   @default("+251 91 123 4567")
+  email               String   @default("info@lanouvellecafe.com")
+  address             String   @default("Bole Medhanialem, Near Edna Mall, Addis Ababa, Ethiopia")
+  opening_hours       String   @default("Mon - Sun: 7:00 AM - 11:30 PM")
+  map_url             String   @default("https://maps.google.com")
+  instagram_url       String   @default("https://instagram.com")
+  facebook_url        String   @default("https://facebook.com")
+  tiktok_url          String   @default("https://tiktok.com")
+  telegram_url        String   @default("https://t.me")
+  accepting_orders    Boolean  @default(true)
+  offers_pickup       Boolean  @default(true)
+  offers_delivery     Boolean  @default(true)
+  offers_dine_in      Boolean  @default(true)
+  offers_reservations Boolean  @default(true)
+  delivery_fee        Float    @default(150.0)
+  prep_time_minutes   Int      @default(25)
+  updated_at          DateTime @default(now()) @updatedAt
+
+  @@map("business_settings")
+}
+
+model MenuCategory {
+  id         String     @id @default(uuid())
+  name       String
+  sort_order Int        @default(0)
+  archived   Boolean    @default(false)
+  created_at DateTime   @default(now())
+  items      MenuItem[]
+
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id          String        @id @default(uuid())
+  category_id String?
+  name        String
+  description String        @default("")
+  price       Float
+  available   Boolean       @default(true)
+  featured    Boolean       @default(false)
+  image_path  String?
+  sort_order  Int           @default(0)
+  archived    Boolean       @default(false)
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @default(now()) @updatedAt
+  category    MenuCategory? @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  order_items OrderItem[]
+
+  @@map("menu_items")
+}
+
+model Order {
+  id               String      @id @default(uuid())
+  order_number     String      @unique
+  tracking_token   String      @unique
+  customer_name    String
+  customer_phone   String
+  customer_email   String?
+  order_type       String
+  delivery_address String?
+  table_number     String?
+  pickup_time      String?
+  note             String?
+  status           String      @default("received")
+  subtotal         Float
+  delivery_fee     Float       @default(0.0)
+  total            Float
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @default(now()) @updatedAt
+  items            OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id           String    @id @default(uuid())
+  order_id     String
+  menu_item_id String?
+  item_name    String
+  unit_price   Float
+  quantity     Int
+  note         String?
+  order        Order     @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  menu_item    MenuItem? @relation(fields: [menu_item_id], references: [id], onDelete: SetNull)
+
+  @@map("order_items")
+}
+
+model Reservation {
+  id               String   @id @default(uuid())
+  customer_name    String
+  customer_phone   String
+  guests           Int
+  reservation_date String
+  reservation_time String
+  special_request  String?
+  status           String   @default("pending")
+  created_at       DateTime @default(now())
+
+  @@map("reservations")
+}
+
+model UserRole {
+  id         String   @id @default(uuid())
+  user_id    String
+  role       String   @default("staff")
+  created_at DateTime @default(now())
+
+  @@map("user_roles")
+}
