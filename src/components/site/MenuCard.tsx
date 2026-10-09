@@ -6,7 +6,7 @@ import { formatBirr } from "@/lib/format";
 export function MenuCard({ item, onSelect }: { item: PublicMenuItem; onSelect: () => void }) {
   const [showIngredients, setShowIngredients] = useState(false);
 
-  // Split description or comma-separated items into readable ingredient pills
+  // Split description into individual ingredient pills
   const ingredientsList = item.description
     ? item.description.split(/[,&·•]/).map((s) => s.trim()).filter(Boolean)
     : [];
@@ -28,8 +28,8 @@ export function MenuCard({ item, onSelect }: { item: PublicMenuItem; onSelect: (
         </div>
       )}
 
-      {/* GLORIFIED FOOD STAGE */}
-      <div className="relative flex h-44 sm:h-52 w-full items-center justify-center py-2 overflow-hidden">
+      {/* GLORIFIED FOOD STAGE — ALWAYS 100% VISIBLE, NEVER COVERED */}
+      <div className="relative flex h-44 sm:h-52 w-full items-center justify-center py-2 overflow-visible">
         {/* Soft radial warm illumination pedestal behind the dish */}
         <div className="pointer-events-none absolute inset-x-6 top-1/2 -translate-y-1/2 h-32 rounded-full bg-radial from-amber-500/15 via-accent/10 to-transparent blur-2xl opacity-60 transition-all duration-500 group-hover:opacity-100 group-hover:scale-120" />
 
@@ -38,48 +38,18 @@ export function MenuCard({ item, onSelect }: { item: PublicMenuItem; onSelect: (
             src={item.imageUrl}
             alt={item.name}
             loading="lazy"
-            className={`relative z-10 max-h-40 sm:max-h-48 w-auto object-contain filter drop-shadow-[0_16px_22px_rgba(0,0,0,0.2)] transition-all duration-300 ease-out group-hover:scale-110 group-hover:-translate-y-2 select-none ${
-              showIngredients ? "scale-90 opacity-20 blur-xs" : ""
-            }`}
+            className="relative z-10 max-h-40 sm:max-h-48 w-auto object-contain filter drop-shadow-[0_16px_22px_rgba(0,0,0,0.2)] transition-all duration-300 ease-out group-hover:scale-110 group-hover:-translate-y-2 select-none"
           />
         ) : (
           <div className="relative z-10 grid size-28 place-items-center rounded-full border border-border/40 bg-secondary/50 text-muted-foreground/40">
             <UtensilsCrossed className="size-10" />
           </div>
         )}
-
-        {/* INGREDIENTS REVEAL OVERLAY OVER THE FOOD AREA */}
-        {showIngredients && (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="absolute inset-0 z-25 flex flex-col justify-center rounded-2xl bg-card/92 dark:bg-card/95 p-4 text-center backdrop-blur-lg animate-in fade-in zoom-in-95 duration-200 border border-accent/30 shadow-lg"
-          >
-            <div className="flex items-center justify-center gap-1.5 text-accent text-xs font-bold uppercase tracking-wider mb-2">
-              <Sparkles className="size-3.5" />
-              <span>Crafted Ingredients</span>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center gap-1.5 max-h-36 overflow-y-auto px-1 py-1">
-              {ingredientsList.map((ing, idx) => (
-                <span
-                  key={idx}
-                  className="rounded-full bg-secondary/80 dark:bg-muted/80 border border-border/50 px-2.5 py-1 text-xs font-medium text-foreground shadow-2xs"
-                >
-                  {ing}
-                </span>
-              ))}
-            </div>
-
-            <p className="mt-2 text-[10px] text-muted-foreground italic">
-              Freshly prepared with authentic culinary artisan care
-            </p>
-          </div>
-        )}
       </div>
 
-      {/* UNDER THE FOOD: THE INGREDIENTS BUTTON */}
+      {/* UNDER THE FOOD: INGREDIENTS BUTTON (NO OVERLAP) */}
       {item.description && (
-        <div className="relative z-20 my-1.5 flex items-center justify-center">
+        <div className="relative z-20 my-2 flex items-center justify-center">
           <button
             type="button"
             onClick={(e) => {
@@ -101,6 +71,23 @@ export function MenuCard({ item, onSelect }: { item: PublicMenuItem; onSelect: (
               <ChevronDown className="size-3 opacity-60" />
             )}
           </button>
+        </div>
+      )}
+
+      {/* INGREDIENTS LIST REVEALED UNDER THE BUTTON (ZERO OVERLAP ON FOOD) */}
+      {showIngredients && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="relative z-20 mb-2 flex flex-wrap items-center justify-center gap-1.5 rounded-2xl bg-secondary/60 dark:bg-muted/40 p-3 border border-border/50 animate-in fade-in slide-in-from-top-2 duration-200"
+        >
+          {ingredientsList.map((ing, idx) => (
+            <span
+              key={idx}
+              className="rounded-full bg-card px-2.5 py-1 text-xs font-medium text-foreground shadow-2xs border border-border/40"
+            >
+              {ing}
+            </span>
+          ))}
         </div>
       )}
 
