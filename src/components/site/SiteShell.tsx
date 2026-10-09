@@ -159,13 +159,13 @@ export function SiteShell({ children }: { children: ReactNode }) {
         </div>
 
         {/* Massive Brand Name at the Bottom of Footer (Like Discord, Laravel, Antigravity) */}
-        <div className="relative w-full overflow-hidden border-t border-espresso-foreground/10 pt-6 pb-2 text-center select-none pointer-events-none">
-          <span className="block w-full font-display font-extrabold uppercase tracking-tighter text-[13.5vw] leading-[0.8] text-center whitespace-nowrap bg-gradient-to-b from-espresso-foreground/25 via-espresso-foreground/10 to-transparent bg-clip-text text-transparent dark:from-white/25 dark:via-white/10 dark:to-transparent">
+        <div className="relative w-full overflow-hidden my-8 sm:my-14 py-4 sm:py-8 text-center select-none pointer-events-none">
+          <span className="block w-full font-display font-black uppercase tracking-tighter text-[16vw] sm:text-[17.5vw] leading-[0.78] text-center whitespace-nowrap bg-gradient-to-b from-espresso-foreground/40 via-espresso-foreground/20 to-espresso-foreground/5 bg-clip-text text-transparent dark:from-white/40 dark:via-white/20 dark:to-white/5">
             La Nouvelle
           </span>
         </div>
 
-        <div className="border-t border-espresso-foreground/10 py-5 text-center text-xs opacity-60">
+        <div className="pb-8 pt-2 text-center text-xs opacity-60">
           © {new Date().getFullYear()} La Nouvelle Café & Restaurant ·{" "}
           <Link to="/auth" className="hover:underline">Staff</Link>
         </div>
