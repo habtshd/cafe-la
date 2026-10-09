@@ -48,7 +48,7 @@ export function Logo({
         loading="eager"
         decoding="async"
         draggable={false}
-        className="h-11 sm:h-12 w-auto object-contain dark:hidden"
+        className={cn("h-11 sm:h-12 w-auto object-contain dark:hidden", className)}
       />
       <img
         src={logoWhite}
@@ -56,7 +56,7 @@ export function Logo({
         loading="eager"
         decoding="async"
         draggable={false}
-        className="hidden h-11 sm:h-12 w-auto object-contain dark:block"
+        className={cn("hidden h-11 sm:h-12 w-auto object-contain dark:block", className)}
       />
     </div>
   );
