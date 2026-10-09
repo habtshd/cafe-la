@@ -45,7 +45,7 @@ function MenuPage() {
 
   return (
     <SiteShell>
-      <div className="mx-auto max-w-5xl px-4 pb-28 pt-24 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 pb-28 pt-24 sm:px-6">
         <div>
           <h1 className="text-4xl font-bold tracking-tight text-foreground font-display sm:text-5xl">Menu</h1>
           <p className="mt-1.5 text-sm text-muted-foreground sm:text-base">
@@ -117,7 +117,7 @@ function MenuPage() {
                   </span>
                 </div>
               </div>
-              <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 sm:gap-4">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
                 {g.items.map((i) => (
                   <MenuCard key={i.id} item={i} onSelect={() => setSelected(i)} />
                 ))}
