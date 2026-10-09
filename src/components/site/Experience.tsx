@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState, useMemo, type PointerEvent as RPointerEvent } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback, type PointerEvent as RPointerEvent } from "react";
 import { UtensilsCrossed, Printer, Play, Pause, Plus, Check, Sparkles, Clock, Globe, ChevronLeft, ChevronRight, ChefHat } from "lucide-react";
 
 // ONLY use photos from C:\Users\habts\Downloads\cafe-la\src\assets
@@ -347,16 +347,34 @@ export function LeanCards({ items, onSelect }: { items: PublicMenuItem[]; onSele
 
 /* 4 — THE INTERACTIVE 3D CULINARY CLOCK (CulinaryClock) */
 /* The food is OUTSIDE the clock, and shows up along the clock's analog line respectively */
-function getNextAngle(current: number, target: number): number {
-  let diff = (target - (current % 360)) % 360;
+function getShortestAngleDelta(fromAngle: number, toAngle: number): number {
+  const normFrom = ((fromAngle % 360) + 360) % 360;
+  const normTo = ((toAngle % 360) + 360) % 360;
+  let diff = normTo - normFrom;
   if (diff > 180) diff -= 360;
   if (diff < -180) diff += 360;
-  return current + diff;
+  return diff;
 }
 
 export function CulinaryClock({ hours }: { hours: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  const dialRef = useRef<HTMLDivElement>(null);
+  const handRef = useRef<HTMLDivElement>(null);
   const cart = useCart();
+
+  // Kinetic physics refs for 60/120fps fluid motion without CSS transition jitter
+  const targetAngleRef = useRef(0);
+  const currentAngleRef = useRef(0);
+  const velocityRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef<{
+    pointerId: number;
+    lastAngle: number;
+    lastTime: number;
+  } | null>(null);
+
+  const [activeDishIndex, setActiveDishIndex] = useState(0);
+  const activeDishIndexRef = useRef(0);
   const [displayAngle, setDisplayAngle] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [speedMultiplier, setSpeedMultiplier] = useState<1 | 2>(1);
@@ -371,7 +389,7 @@ export function CulinaryClock({ hours }: { hours: string }) {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // All 11 Signature Dishes from src/assets positioned OUTSIDE the clock dial
+  // All 11 Signature Dishes positioned outside the clock dial
   const clockDishes = useMemo(
     () => [
       {
@@ -466,93 +484,303 @@ export function CulinaryClock({ hours }: { hours: string }) {
     []
   );
 
-  // Scroll tracking — maps vertical scroll smoothly to clock angle
+  // High-performance RAF physics loop: continuous, silky-smooth rotation & damped lerp
   useEffect(() => {
-    let rafId: number;
-    const onScroll = () => {
-      if (isAutoPlaying) return;
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        const r = ref.current?.getBoundingClientRect();
-        if (!r) return;
-        const total = r.height - window.innerHeight;
-        if (total <= 0) return;
-        // p goes from 0 (section enters sticky top) to 1 (clock sweep finishes)
-        const p = Math.max(0, Math.min(1, -r.top / total));
-        setDisplayAngle(p * 360);
-      });
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(rafId);
-    };
-  }, [isAutoPlaying]);
-
-  // Auto-tour fast and silky smooth rotation via requestAnimationFrame (sub-pixel, 60/120fps)
-  useEffect(() => {
-    if (!isAutoPlaying) return;
     let rafId: number;
     let lastTime = performance.now();
+    let lastRenderedAngle = 0;
 
     const loop = (now: number) => {
       const dt = Math.min(now - lastTime, 40);
       lastTime = now;
-      setDisplayAngle((prev) => prev + 0.018 * speedMultiplier * dt);
+
+      if (isAutoPlaying && !isDraggingRef.current) {
+        // Brisk, elegant speed: ~45 deg/sec at 1x, ~90 deg/sec at 2x
+        const autoSpeed = 0.045 * speedMultiplier;
+        targetAngleRef.current += autoSpeed * dt;
+      } else if (!isDraggingRef.current && Math.abs(velocityRef.current) > 0.005) {
+        // Natural inertial glide decay
+        targetAngleRef.current += velocityRef.current * (dt / 16.6);
+        velocityRef.current *= Math.pow(0.92, dt / 16.6);
+      }
+
+      // Silky-smooth damped lerp: graceful luxury Swiss timepiece sweep (~350ms fluid arc)
+      const diff = targetAngleRef.current - currentAngleRef.current;
+      const lerpFactor = Math.min(1, 1 - Math.exp(-0.009 * dt));
+      currentAngleRef.current += diff * lerpFactor;
+
+      // Direct hardware-accelerated transform update on clock hand: 120fps fluid without CSS conflict
+      if (handRef.current) {
+        handRef.current.style.transform = `rotate(${currentAngleRef.current}deg)`;
+      }
+
+      // In auto-play or dial drag mode, dynamically track nearest dish
+      if (isAutoPlaying || isDraggingRef.current) {
+        const norm = ((currentAngleRef.current % 360) + 360) % 360;
+        let best = 0;
+        let minDiff = 999;
+        clockDishes.forEach((d, idx) => {
+          let dDiff = Math.abs(norm - d.angle) % 360;
+          if (dDiff > 180) dDiff = 360 - dDiff;
+          if (dDiff < minDiff) {
+            minDiff = dDiff;
+            best = idx;
+          }
+        });
+
+        if (best !== activeDishIndexRef.current) {
+          activeDishIndexRef.current = best;
+          setActiveDishIndex(best);
+        }
+      }
+
+      // Sync displayAngle throttled for dial digits
+      if (Math.abs(currentAngleRef.current - lastRenderedAngle) > 0.4) {
+        lastRenderedAngle = currentAngleRef.current;
+        setDisplayAngle(currentAngleRef.current);
+      }
+
       rafId = requestAnimationFrame(loop);
     };
 
     rafId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafId);
-  }, [isAutoPlaying, speedMultiplier]);
+  }, [isAutoPlaying, speedMultiplier, clockDishes]);
 
-  const currentAngle = useMemo(() => {
-    const norm = displayAngle % 360;
-    return norm < 0 ? norm + 360 : norm;
-  }, [displayAngle]);
+  // Discrete dish-stepping presentation: 1 scroll gesture = 1 smooth dish rotation
+  const stepToDish = useCallback(
+    (nextIdx: number) => {
+      const count = clockDishes.length;
+      const clamped = Math.max(0, Math.min(count - 1, nextIdx));
+      if (clamped === activeDishIndexRef.current) return;
 
-  const activeDishIndex = useMemo(() => {
-    let best = 0;
-    let minDiff = 999;
-    clockDishes.forEach((d, idx) => {
-      let diff = Math.abs(currentAngle - d.angle) % 360;
-      if (diff > 180) diff = 360 - diff;
-      if (diff < minDiff) {
-        minDiff = diff;
-        best = idx;
+      setIsAutoPlaying(false);
+      velocityRef.current = 0;
+
+      const targetDish = clockDishes[clamped];
+      if (!targetDish) return;
+
+      const delta = getShortestAngleDelta(currentAngleRef.current, targetDish.angle);
+      targetAngleRef.current = currentAngleRef.current + delta;
+
+      activeDishIndexRef.current = clamped;
+      setActiveDishIndex(clamped);
+    },
+    [clockDishes]
+  );
+
+  const wheelAccumulatorRef = useRef(0);
+  const lastStepTimeRef = useRef(0);
+  const wheelResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Discrete scroll-step presentation: 1 scroll gesture = 1 smooth dish rotation
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      // Check if the culinary clock section is currently active in the viewport
+      const rect = el.getBoundingClientRect();
+      const windowH = window.innerHeight;
+
+      // In-view when top is near or above top of screen and section occupies majority of viewport
+      const isClockInView = rect.top <= 120 && rect.bottom >= windowH * 0.55;
+      if (!isClockInView) return;
+
+      const currentIdx = activeDishIndexRef.current;
+      const isAtFirst = currentIdx === 0;
+      const isAtLast = currentIdx === clockDishes.length - 1;
+
+      // Scrolling UP at first dish -> release to normal page scroll up
+      if (isAtFirst && e.deltaY < 0) return;
+
+      // Scrolling DOWN at last dish -> release to normal page scroll down
+      if (isAtLast && e.deltaY > 0) return;
+
+      // Inside dish sequence: intercept scroll gesture
+      e.preventDefault();
+
+      const now = performance.now();
+      wheelAccumulatorRef.current += e.deltaY;
+
+      if (wheelResetTimerRef.current) {
+        clearTimeout(wheelResetTimerRef.current);
       }
-    });
-    return best;
-  }, [currentAngle, clockDishes]);
+      wheelResetTimerRef.current = setTimeout(() => {
+        wheelAccumulatorRef.current = 0;
+      }, 200);
+
+      const cooldown = 240; // ms between discrete steps
+      const threshold = 35; // px accumulated scroll
+
+      if (now - lastStepTimeRef.current >= cooldown) {
+        if (wheelAccumulatorRef.current >= threshold) {
+          stepToDish(currentIdx + 1);
+          lastStepTimeRef.current = now;
+          wheelAccumulatorRef.current = 0;
+        } else if (wheelAccumulatorRef.current <= -threshold) {
+          stepToDish(currentIdx - 1);
+          lastStepTimeRef.current = now;
+          wheelAccumulatorRef.current = 0;
+        }
+      }
+    };
+
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      if (wheelResetTimerRef.current) clearTimeout(wheelResetTimerRef.current);
+    };
+  }, [clockDishes.length, stepToDish]);
+
+  // Touch swipe support on mobile devices
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    let touchStartY = 0;
+    let touchStartX = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        touchStartY = e.touches[0]!.clientY;
+        touchStartX = e.touches[0]!.clientX;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const dy = touchStartY - e.touches[0]!.clientY; // positive = swipe up = scroll down
+      const dx = Math.abs(touchStartX - e.touches[0]!.clientX);
+
+      if (dx > Math.abs(dy)) return; // horizontal swipe
+
+      const rect = el.getBoundingClientRect();
+      const windowH = window.innerHeight;
+      const isClockInView = rect.top <= 120 && rect.bottom >= windowH * 0.55;
+      if (!isClockInView) return;
+
+      const currentIdx = activeDishIndexRef.current;
+      const isAtFirst = currentIdx === 0;
+      const isAtLast = currentIdx === clockDishes.length - 1;
+
+      if ((isAtFirst && dy < 0) || (isAtLast && dy > 0)) {
+        return; // boundary release
+      }
+
+      if (Math.abs(dy) > 35) {
+        e.preventDefault();
+        const now = performance.now();
+        if (now - lastStepTimeRef.current >= 260) {
+          if (dy > 0) {
+            stepToDish(currentIdx + 1);
+          } else {
+            stepToDish(currentIdx - 1);
+          }
+          lastStepTimeRef.current = now;
+          touchStartY = e.touches[0]!.clientY;
+        }
+      }
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+    };
+  }, [clockDishes.length, stepToDish]);
+
+  // Keyboard arrow keys navigation
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName || "")) return;
+      const el = ref.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const windowH = window.innerHeight;
+      const isClockInView = rect.top <= 150 && rect.bottom >= windowH * 0.5;
+      if (!isClockInView) return;
+
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+        if (activeDishIndexRef.current < clockDishes.length - 1) {
+          e.preventDefault();
+          stepToDish(activeDishIndexRef.current + 1);
+        }
+      } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+        if (activeDishIndexRef.current > 0) {
+          e.preventDefault();
+          stepToDish(activeDishIndexRef.current - 1);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [clockDishes.length, stepToDish]);
 
   const activeDish = clockDishes[activeDishIndex]!;
 
-  const handleSelectDish = (targetAngle: number) => {
-    setIsAutoPlaying(false);
-    const el = ref.current;
-    if (el) {
-      const total = el.offsetHeight - window.innerHeight;
-      if (total > 0) {
-        const targetP = targetAngle / 360;
-        const targetY = el.offsetTop + targetP * total;
-        window.scrollTo({ top: targetY, behavior: "smooth" });
-        return;
-      }
-    }
-    setDisplayAngle((prev) => getNextAngle(prev, targetAngle));
-  };
-
   const handlePrevDish = () => {
-    setIsAutoPlaying(false);
-    const prevIdx = (activeDishIndex - 1 + clockDishes.length) % clockDishes.length;
-    handleSelectDish(clockDishes[prevIdx]!.angle);
+    stepToDish(activeDishIndexRef.current - 1);
   };
 
   const handleNextDish = () => {
+    stepToDish(activeDishIndexRef.current + 1);
+  };
+
+  // Direct touch/drag gesture on dial
+  const handleDialPointerDown = (e: React.PointerEvent) => {
+    const dial = dialRef.current;
+    if (!dial) return;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    isDraggingRef.current = true;
     setIsAutoPlaying(false);
-    const nextIdx = (activeDishIndex + 1) % clockDishes.length;
-    handleSelectDish(clockDishes[nextIdx]!.angle);
+    velocityRef.current = 0;
+
+    const rect = dial.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const startAngle = Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI);
+
+    dragStartRef.current = {
+      pointerId: e.pointerId,
+      lastAngle: startAngle,
+      lastTime: performance.now(),
+    };
+  };
+
+  const handleDialPointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current || !dragStartRef.current) return;
+    const dial = dialRef.current;
+    if (!dial) return;
+
+    const rect = dial.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const nowAngle = Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI);
+    const nowTime = performance.now();
+
+    let delta = nowAngle - dragStartRef.current.lastAngle;
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+
+    targetAngleRef.current += delta;
+    currentAngleRef.current += delta;
+
+    const dt = Math.max(1, nowTime - dragStartRef.current.lastTime);
+    velocityRef.current = (delta / dt) * 16.6 * 0.8;
+
+    dragStartRef.current.lastAngle = nowAngle;
+    dragStartRef.current.lastTime = nowTime;
+  };
+
+  const handleDialPointerUp = (e: React.PointerEvent) => {
+    if (dragStartRef.current?.pointerId === e.pointerId) {
+      isDraggingRef.current = false;
+      dragStartRef.current = null;
+    }
   };
 
   const handleAddToCart = (dishFood: SignatureFood) => {
@@ -573,7 +801,8 @@ export function CulinaryClock({ hours }: { hours: string }) {
   return (
     <section
       ref={ref}
-      className="relative h-[220vh] bg-gradient-to-b from-background via-secondary/25 to-background overflow-visible"
+      id="culinary-clock"
+      className="relative min-h-screen py-12 sm:py-16 bg-gradient-to-b from-background via-secondary/25 to-background flex flex-col items-center justify-center overflow-hidden select-none"
       onPointerMove={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
         const nx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
@@ -581,13 +810,13 @@ export function CulinaryClock({ hours }: { hours: string }) {
         setMouseParallax({ x: Math.max(-1, Math.min(1, nx)), y: Math.max(-1, Math.min(1, ny)) });
       }}
     >
-      {/* Refined bistro chromatic ambient lights refracting through the liquid glass */}
+      {/* Ambient chromatic light refractions */}
       <div className="pointer-events-none absolute left-1/4 top-1/3 -z-10 size-[32rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/15 blur-[140px] animate-pulse" />
       <div className="pointer-events-none absolute right-1/4 bottom-1/4 -z-10 size-[28rem] rounded-full bg-primary/10 blur-[150px]" />
       <div className="pointer-events-none absolute left-1/2 bottom-1/3 -z-10 size-[26rem] rounded-full bg-amber-500/10 blur-[130px]" />
 
-      <div className="sticky top-0 flex h-screen max-h-screen flex-col items-center justify-center gap-3 sm:gap-5 overflow-hidden px-4 sm:px-6 py-3 select-none">
-        {/* Modern Light Switch in the Culinary Timepiece section (Clean lamp, no long string) */}
+      <div className="relative w-full flex flex-col items-center justify-center gap-3 sm:gap-5 px-4 sm:px-6">
+        {/* Modern Light Switch */}
         <div className="absolute top-0 right-3 sm:right-6 md:right-10 lg:right-14 z-30 pointer-events-auto">
           <ModernLightSwitch />
         </div>
@@ -601,11 +830,11 @@ export function CulinaryClock({ hours }: { hours: string }) {
             Flavors that turn with the clock
           </h2>
           <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
-            Scroll to rotate through our daily culinary hours — revealing each dish at its respective time.
+            Rotate through our daily culinary hours — revealing each dish at its golden hour.
           </p>
         </div>
 
-        {/* 3D Clock Stage: Clean Analog Clock in Center, Food OUTSIDE along the Analog Line */}
+        {/* 3D Clock Stage: Analog Clock in Center, Food OUTSIDE in Orbit */}
         <div className="grid w-full max-w-[1400px] items-center gap-6 lg:gap-8 lg:grid-cols-[1.38fr_1fr]">
           <div
             className="perspective-1000 relative mx-auto flex items-center justify-center select-none"
@@ -615,20 +844,25 @@ export function CulinaryClock({ hours }: { hours: string }) {
             }}
           >
             <div
-              className="preserve-3d relative size-full flex items-center justify-center transition-transform duration-200"
+              className="preserve-3d relative size-full flex items-center justify-center transition-transform duration-150 ease-out"
               style={{
-                transform: `rotateX(${-mouseParallax.y * 8}deg) rotateY(${mouseParallax.x * 8}deg)`,
+                transform: `rotateX(${-mouseParallax.y * 6}deg) rotateY(${mouseParallax.x * 6}deg)`,
               }}
             >
-              {/* THE CLEAN ANALOG CLOCK (Center, NO food inside, Liquid Glass Dial) */}
+              {/* THE ANALOG CLOCK (Center, Liquid Glass Dial, Drag-interactive) */}
               <div
-                className="liquid-glass-dial relative size-44 sm:size-56 rounded-full flex items-center justify-center transition-all duration-300"
+                ref={dialRef}
+                onPointerDown={handleDialPointerDown}
+                onPointerMove={handleDialPointerMove}
+                onPointerUp={handleDialPointerUp}
+                onPointerCancel={handleDialPointerUp}
+                className="liquid-glass-dial relative size-44 sm:size-56 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-xl"
               >
-                <div className="absolute inset-2 sm:inset-2.5 rounded-full border border-foreground/15 dark:border-white/20" />
+                <div className="absolute inset-2 sm:inset-2.5 rounded-full border border-foreground/15 dark:border-white/20 pointer-events-none" />
 
                 {/* 12 Hour Ticks */}
                 {Array.from({ length: 12 }, (_, i) => (
-                  <div key={i} className="absolute inset-0" style={{ transform: `rotate(${i * 30}deg)` }}>
+                  <div key={i} className="absolute inset-0 pointer-events-none" style={{ transform: `rotate(${i * 30}deg)` }}>
                     <span
                       className={`absolute left-1/2 top-2 -translate-x-1/2 rounded-full ${
                         i % 3 === 0 ? "h-4 w-1.5 bg-primary/80" : "h-2.5 w-0.5 bg-primary/35"
@@ -647,29 +881,30 @@ export function CulinaryClock({ hours }: { hours: string }) {
 
                 {/* 60 Minute Dots */}
                 {Array.from({ length: 60 }, (_, i) => (
-                  <div key={`m-${i}`} className="absolute inset-0" style={{ transform: `rotate(${i * 6}deg)` }}>
+                  <div key={`m-${i}`} className="absolute inset-0 pointer-events-none" style={{ transform: `rotate(${i * 6}deg)` }}>
                     <span className="absolute left-1/2 top-1 size-1 -translate-x-1/2 rounded-full bg-primary/20" />
                   </div>
                 ))}
 
-                {/* Clock Center Display: Live Digital Time & Service */}
-                <div className="z-10 text-center px-2">
-                  <span className="font-mono text-sm sm:text-lg font-bold tracking-tight text-foreground">
+                {/* Polished Center Bearing Jewel (No text overlap!) */}
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-3.5 sm:size-4 rounded-full border-2 border-background bg-accent shadow-[0_0_12px_rgba(202,138,4,0.7)] z-20 pointer-events-none" />
+
+                {/* Clock Face Display: Live Digital Time & Service below center bearing */}
+                <div className="z-10 flex flex-col items-center text-center px-2 pointer-events-none mt-10 sm:mt-12">
+                  <span className="font-mono text-xs sm:text-sm font-bold tracking-tight text-foreground bg-background/70 dark:bg-card/75 px-2.5 py-0.5 rounded-full border border-border/40 shadow-xs backdrop-blur-md">
                     {activeDish.label}
                   </span>
-                  <p className="mt-0.5 text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-accent truncate max-w-[130px]">
+                  <p className="mt-1 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-accent truncate max-w-[110px] sm:max-w-[130px]">
                     {activeDish.title}
                   </p>
                 </div>
 
-                <div className="absolute size-4 sm:size-5 rounded-full border-2 border-background bg-accent shadow-md z-20" />
-
-                {/* THE ROTATING ANALOG LINE — EXTENDS OUTSIDE THE CLOCK! */}
+                {/* THE ROTATING ANALOG LINE — EXTENDS OUTSIDE THE CLOCK DIRECTLY TO THE ACTIVE DISH */}
                 <div
+                  ref={handRef}
                   className="absolute inset-0 pointer-events-none will-change-transform"
                   style={{
                     transform: `rotate(${displayAngle}deg)`,
-                    transition: isAutoPlaying ? "none" : "transform 0.42s cubic-bezier(0.2, 0.9, 0.3, 1)",
                   }}
                 >
                   <div
@@ -677,16 +912,16 @@ export function CulinaryClock({ hours }: { hours: string }) {
                     style={{
                       height: `${orbitRadius}px`,
                       width: "3px",
-                      background: "linear-gradient(to top, var(--color-primary) 20%, var(--color-accent) 70%, var(--color-accent) 100%)",
+                      background: "linear-gradient(to top, var(--color-primary) 15%, var(--color-accent) 70%, var(--color-accent) 100%)",
                       boxShadow: "0 0 16px var(--color-accent)",
                     }}
                   >
-                    <div className="absolute -top-2 left-1/2 size-4.5 -translate-x-1/2 rounded-full bg-accent shadow-[0_0_18px_var(--color-accent)] ring-4 ring-accent/25 animate-pulse" />
+                    <div className="absolute -top-2 left-1/2 size-4 -translate-x-1/2 rounded-full bg-accent shadow-[0_0_18px_var(--color-accent)] ring-4 ring-accent/25" />
                   </div>
                 </div>
               </div>
 
-              {/* ALL 11 FOOD ITEMS POSITIONED OUTSIDE THE CLOCK RESPECTIVELY */}
+              {/* ALL 11 FOOD ITEMS IN ORBIT WITH BUTTERY SPRING TRANSITION */}
               {clockDishes.map((item, idx) => {
                 const isActive = idx === activeDishIndex;
                 const rad = (item.angle * Math.PI) / 180;
@@ -696,32 +931,34 @@ export function CulinaryClock({ hours }: { hours: string }) {
                 return (
                   <button
                     key={item.slot}
-                    onClick={() => handleSelectDish(item.angle)}
-                    className={`absolute flex flex-col items-center justify-center cursor-pointer transition-all duration-400 ease-out ${
+                    type="button"
+                    onClick={() => stepToDish(idx)}
+                    className={`absolute flex flex-col items-center justify-center cursor-pointer will-change-transform ${
                       isActive
-                        ? "z-30 scale-120 sm:scale-135 opacity-100 drop-shadow-2xl"
-                        : "z-10 scale-85 sm:scale-95 opacity-55 hover:opacity-95 hover:scale-100"
+                        ? "z-30 scale-120 sm:scale-130 opacity-100 drop-shadow-2xl"
+                        : "z-10 scale-85 sm:scale-92 opacity-50 hover:opacity-95 hover:scale-105"
                     }`}
                     style={{
                       left: `calc(50% + ${posX}px)`,
                       top: `calc(50% + ${posY}px)`,
                       transform: "translate(-50%, -50%)",
+                      transition: "transform 0.35s cubic-bezier(0.34, 1.45, 0.64, 1), opacity 0.25s ease, filter 0.25s ease",
                     }}
                   >
                     <div className="relative group flex flex-col items-center">
                       {isActive && (
-                        <div className="absolute -inset-3 rounded-full bg-accent/20 blur-lg -z-10 animate-pulse" />
+                        <div className="absolute -inset-3 rounded-full bg-accent/25 blur-lg -z-10 animate-pulse" />
                       )}
                       <img
                         src={item.food.image}
                         alt={item.food.name}
                         loading="eager"
                         draggable={false}
-                        className={`clock-shadow w-auto object-contain transition-transform duration-500 ${
+                        className={`clock-shadow w-auto object-contain transition-transform duration-300 ${
                           isMobile
-                            ? isActive ? "h-24 max-w-[110px]" : "h-13 max-w-[60px]"
-                            : isActive ? "h-34 max-w-[160px] sm:h-42 sm:max-w-[190px]" : "h-16 max-w-[80px] sm:h-20 sm:max-w-[95px]"
-                        } ${isActive ? "animate-float-slow animate-food-pop" : ""}`}
+                            ? isActive ? "h-22 max-w-[105px]" : "h-13 max-w-[60px]"
+                            : isActive ? "h-30 max-w-[150px] sm:h-38 sm:max-w-[180px]" : "h-15 max-w-[75px] sm:h-18 sm:max-w-[85px]"
+                        } ${isActive ? "animate-float-slow" : ""}`}
                       />
 
                       <div
@@ -741,107 +978,110 @@ export function CulinaryClock({ hours }: { hours: string }) {
             </div>
           </div>
 
-          {/* Luxury Liquid Glass Presentation Card for the Active Dish */}
+          {/* Luxury Liquid Glass Presentation Card for Active Dish */}
           <div className="relative group/card w-full max-w-md lg:max-w-lg mx-auto">
-            {/* Ambient warm chromatic refraction glow directly behind the transparent card */}
+            {/* Chromatic glow backdrop */}
             <div className="pointer-events-none absolute -inset-5 -z-10 rounded-[2.5rem] bg-gradient-to-br from-amber-500/20 via-primary/10 to-accent/25 blur-2xl opacity-80 transition-opacity duration-700 group-hover/card:opacity-100" />
             <div className="pointer-events-none absolute -top-8 -left-6 -z-10 size-44 rounded-full bg-amber-400/25 blur-3xl animate-pulse" />
             <div className="pointer-events-none absolute -bottom-6 -right-6 -z-10 size-40 rounded-full bg-accent/25 blur-3xl" />
 
-            <div className="liquid-glass-card rounded-2xl p-5 sm:p-6 transition-all duration-500 overflow-hidden z-20">
-              {/* Specular fluid sheen beam */}
-              <div className="pointer-events-none absolute -top-1/2 left-0 right-0 h-full bg-gradient-to-b from-white/30 via-transparent to-transparent opacity-60" />
+            <div className="liquid-glass-card rounded-2xl p-5 sm:p-6 transition-all duration-300 overflow-hidden z-20">
+              <div key={activeDish.food.id} className="animate-dish-glide">
+                {/* Specular fluid sheen */}
+                <div className="pointer-events-none absolute -top-1/2 left-0 right-0 h-full bg-gradient-to-b from-white/30 via-transparent to-transparent opacity-60" />
 
-              {/* Header: Time & Service Badge */}
-              <div className="relative flex flex-wrap items-center justify-between gap-2 border-b border-foreground/10 pb-3.5">
-                <div className="liquid-glass-pill flex items-center gap-2 rounded-full px-3 py-1">
-                  <span className="relative flex size-2.5">
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-80" />
-                    <span className="relative inline-flex size-2.5 rounded-full bg-accent" />
-                  </span>
-                  <span className="font-mono text-xs sm:text-sm font-bold tracking-wide text-foreground">
-                    {activeDish.label}
+                {/* Header: Time & Service Badge */}
+                <div className="relative flex flex-wrap items-center justify-between gap-2 border-b border-foreground/10 pb-3.5">
+                  <div className="liquid-glass-pill flex items-center gap-2 rounded-full px-3 py-1">
+                    <span className="relative flex size-2.5">
+                      <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-80" />
+                      <span className="relative inline-flex size-2.5 rounded-full bg-accent" />
+                    </span>
+                    <span className="font-mono text-xs sm:text-sm font-bold tracking-wide text-foreground">
+                      {activeDish.label}
+                    </span>
+                  </div>
+                  <span className="liquid-glass-pill rounded-full border border-accent/40 bg-accent/15 px-3 py-1 text-[11px] sm:text-xs font-bold uppercase tracking-widest text-accent shadow-sm">
+                    {activeDish.title}
                   </span>
                 </div>
-                <span className="liquid-glass-pill rounded-full border border-accent/40 bg-accent/15 px-3 py-1 text-[11px] sm:text-xs font-bold uppercase tracking-widest text-accent shadow-sm">
-                  {activeDish.title}
-                </span>
-              </div>
 
-              {/* Dish Title & Description */}
-              <div className="relative mt-4">
-                <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-primary/80">
-                  {activeDish.food.cuisine}
-                </p>
-                <h3 className="mt-1 font-display text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
-                  {activeDish.food.name}
-                </h3>
-                <p className="mt-1 font-display text-xs sm:text-sm italic text-foreground/75">
-                  {activeDish.food.subtitle}
-                </p>
-                <p className="mt-2.5 text-xs sm:text-sm leading-relaxed text-foreground/85 line-clamp-3">
-                  {activeDish.food.description}
-                </p>
-              </div>
-
-              {/* Frosted Liquid Glass Badges */}
-              <div className="relative mt-4 flex flex-wrap items-center gap-2">
-                {activeDish.food.prepTime && (
-                  <span className="liquid-glass-pill rounded-lg px-2.5 py-1 text-xs font-semibold text-foreground/90">
-                    ⏱ {activeDish.food.prepTime}
-                  </span>
-                )}
-                {activeDish.food.calories && (
-                  <span className="liquid-glass-pill rounded-lg px-2.5 py-1 text-xs font-semibold text-foreground/90">
-                    🔥 {activeDish.food.calories}
-                  </span>
-                )}
-                {activeDish.food.badges.map((b) => (
-                  <span key={b} className="liquid-glass-pill rounded-lg px-2.5 py-1 text-xs font-medium text-foreground/90">
-                    {b}
-                  </span>
-                ))}
-              </div>
-
-              {/* Price & Obsidian Luxe Liquid Button */}
-              <div className="relative mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-foreground/10 pt-4">
-                <div>
-                  <p className="text-[10px] sm:text-xs font-semibold text-foreground/60 uppercase tracking-wider">Price</p>
-                  <p className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-primary drop-shadow-sm">
-                    {formatBirr(activeDish.food.price)}
+                {/* Dish Title & Description */}
+                <div className="relative mt-4">
+                  <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-primary/80">
+                    {activeDish.food.cuisine}
+                  </p>
+                  <h3 className="mt-1 font-display text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
+                    {activeDish.food.name}
+                  </h3>
+                  <p className="mt-1 font-display text-xs sm:text-sm italic text-foreground/75">
+                    {activeDish.food.subtitle}
+                  </p>
+                  <p className="mt-2.5 text-xs sm:text-sm leading-relaxed text-foreground/85 line-clamp-3">
+                    {activeDish.food.description}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="default"
-                    className="relative overflow-hidden rounded-xl bg-gradient-to-b from-primary to-primary/90 hover:from-primary/95 hover:to-primary text-primary-foreground border border-accent/40 shadow-lg px-6 py-2.5 text-sm font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group"
-                    onClick={() => handleAddToCart(activeDish.food)}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full duration-700 transition-transform" />
-                    {addedItem === activeDish.food.id ? (
-                      <span className="flex items-center gap-1.5">
-                        <Check className="size-4 text-accent" /> Added
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1.5">
-                        <Plus className="size-4 text-accent" /> Add to Order
-                      </span>
-                    )}
-                  </Button>
+                {/* Frosted Badges */}
+                <div className="relative mt-4 flex flex-wrap items-center gap-2">
+                  {activeDish.food.prepTime && (
+                    <span className="liquid-glass-pill rounded-lg px-2.5 py-1 text-xs font-semibold text-foreground/90">
+                      ⏱ {activeDish.food.prepTime}
+                    </span>
+                  )}
+                  {activeDish.food.calories && (
+                    <span className="liquid-glass-pill rounded-lg px-2.5 py-1 text-xs font-semibold text-foreground/90">
+                      🔥 {activeDish.food.calories}
+                    </span>
+                  )}
+                  {activeDish.food.badges.map((b) => (
+                    <span key={b} className="liquid-glass-pill rounded-lg px-2.5 py-1 text-xs font-medium text-foreground/90">
+                      {b}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Price & Action Button */}
+                <div className="relative mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-foreground/10 pt-4">
+                  <div>
+                    <p className="text-[10px] sm:text-xs font-semibold text-foreground/60 uppercase tracking-wider">Price</p>
+                    <p className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-primary drop-shadow-sm">
+                      {formatBirr(activeDish.food.price)}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="default"
+                      className="relative overflow-hidden rounded-xl bg-gradient-to-b from-primary to-primary/90 hover:from-primary/95 hover:to-primary text-primary-foreground border border-accent/40 shadow-lg px-6 py-2.5 text-sm font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group"
+                      onClick={() => handleAddToCart(activeDish.food)}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full duration-700 transition-transform" />
+                      {addedItem === activeDish.food.id ? (
+                        <span className="flex items-center gap-1.5">
+                          <Check className="size-4 text-accent" /> Added
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5">
+                          <Plus className="size-4 text-accent" /> Add to Order
+                        </span>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Modernized Floating Control Dock */}
-        <div className="relative z-30 mt-6 sm:mt-9 flex items-center gap-1 sm:gap-2 rounded-full border border-border/60 bg-background/85 px-2.5 sm:px-3.5 py-1.5 shadow-md backdrop-blur-md dark:border-white/10 dark:bg-card/90">
+        {/* Modernized Floating Control Dock with 11 Position Indicators */}
+        <div className="relative z-30 mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-1 sm:gap-2 rounded-full border border-border/60 bg-background/85 px-3 sm:px-4 py-1.5 shadow-md backdrop-blur-md dark:border-white/10 dark:bg-card/90">
           <Button
             size="icon"
             variant="ghost"
-            className="size-7 rounded-full text-muted-foreground hover:text-foreground"
+            className="size-7 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30"
             onClick={handlePrevDish}
+            disabled={activeDishIndex === 0}
             aria-label="Previous dish"
           >
             <ChevronLeft className="size-4" />
@@ -860,9 +1100,27 @@ export function CulinaryClock({ hours }: { hours: string }) {
           <span className="h-3.5 w-px bg-border/60 mx-0.5" />
 
           {/* Active dish & time slot display */}
-          <div className="flex items-center gap-1.5 px-2 text-xs">
+          <div className="flex items-center gap-1.5 px-1.5 text-xs">
             <span className="font-semibold text-foreground">{activeDish.label}</span>
-            <span className="text-muted-foreground hidden sm:inline max-w-[200px] truncate">· {activeDish.food.name}</span>
+            <span className="text-muted-foreground hidden sm:inline max-w-[170px] truncate">· {activeDish.food.name}</span>
+            <span className="font-mono text-[10px] text-accent/80 font-bold">({activeDishIndex + 1}/{clockDishes.length})</span>
+          </div>
+
+          {/* 11 Golden Indicator Dots */}
+          <div className="hidden md:flex items-center gap-1.5 px-1.5">
+            {clockDishes.map((_, dotIdx) => (
+              <button
+                key={dotIdx}
+                type="button"
+                onClick={() => stepToDish(dotIdx)}
+                className={`size-2 rounded-full transition-all duration-300 cursor-pointer ${
+                  dotIdx === activeDishIndex
+                    ? "bg-accent scale-135 shadow-[0_0_8px_var(--color-accent)] ring-1 ring-accent"
+                    : "bg-foreground/20 hover:bg-foreground/50"
+                }`}
+                aria-label={`Go to dish ${dotIdx + 1}`}
+              />
+            ))}
           </div>
 
           <span className="h-3.5 w-px bg-border/60 mx-0.5" />
@@ -880,8 +1138,9 @@ export function CulinaryClock({ hours }: { hours: string }) {
           <Button
             size="icon"
             variant="ghost"
-            className="size-7 rounded-full text-muted-foreground hover:text-foreground"
+            className="size-7 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30"
             onClick={handleNextDish}
+            disabled={activeDishIndex === clockDishes.length - 1}
             aria-label="Next dish"
           >
             <ChevronRight className="size-4" />
@@ -891,6 +1150,7 @@ export function CulinaryClock({ hours }: { hours: string }) {
     </section>
   );
 }
+
 
 // Backward-compatible alias
 export const LatteClock = CulinaryClock;

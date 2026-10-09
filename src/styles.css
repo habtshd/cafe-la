@@ -248,12 +248,26 @@
 }
 
 @keyframes food-pop {
-  0% { transform: scale(0.8) translateZ(-40px) rotate(-6deg); opacity: 0; }
-  60% { transform: scale(1.03) translateZ(15px) rotate(1deg); opacity: 1; }
-  100% { transform: scale(1) translateZ(0px) rotate(0deg); opacity: 1; }
+  0% { transform: scale(0.95); }
+  60% { transform: scale(1.02); }
+  100% { transform: scale(1); }
 }
 .animate-food-pop {
-  animation: food-pop 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: food-pop 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes dish-glide {
+  from {
+    opacity: 0.25;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-dish-glide {
+  animation: dish-glide 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .clock-shadow {
