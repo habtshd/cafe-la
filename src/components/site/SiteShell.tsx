@@ -135,37 +135,37 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
       <main className="flex-1">{children}</main>
 
-      <footer className="relative overflow-hidden border-t border-border bg-espresso text-espresso-foreground transition-colors duration-300">
+      <footer className="relative overflow-hidden border-t border-[#D6C49C] dark:border-white/10 bg-gradient-to-b from-[#EFE3C8] via-[#E8DCBD] to-[#DFD0AC] dark:from-[#16120E] dark:via-[#100D0A] dark:to-[#080605] text-[#241A12] dark:text-[#F5EFEA] transition-colors duration-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:shadow-none">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 pt-14 pb-10 md:grid-cols-3">
           <div>
             <Logo variant={isDark ? "white" : "brown"} className="h-12" />
-            {s?.tagline && <p className="mt-4 max-w-xs text-sm opacity-90">{s.tagline}</p>}
+            {s?.tagline && <p className="mt-4 max-w-xs text-sm text-[#4D3929] dark:text-[#D4C3B4]">{s.tagline}</p>}
           </div>
           <div className="text-sm">
-            <p className="eyebrow mb-3 opacity-60">Visit</p>
-            {s?.address ? <p className="whitespace-pre-line opacity-90">{s.address}</p> : null}
-            {s?.opening_hours ? <p className="mt-2 whitespace-pre-line opacity-70">{s.opening_hours}</p> : null}
-            {s?.phone && <a href={`tel:${s.phone}`} className="mt-2 block opacity-90 hover:opacity-100">{s.phone}</a>}
+            <p className="eyebrow mb-3 text-[#826349] dark:text-[#A89078] font-bold uppercase tracking-wider text-xs">Visit</p>
+            {s?.address ? <p className="whitespace-pre-line text-[#33251A] dark:text-[#E8DDD2]">{s.address}</p> : null}
+            {s?.opening_hours ? <p className="mt-2 whitespace-pre-line text-[#5C4533] dark:text-[#BFAF9F]">{s.opening_hours}</p> : null}
+            {s?.phone && <a href={`tel:${s.phone}`} className="mt-2 block text-[#33251A] dark:text-[#E8DDD2] hover:text-accent">{s.phone}</a>}
           </div>
           <div className="text-sm">
-            <p className="eyebrow mb-3 opacity-60">Follow</p>
-            <div className="flex flex-col gap-1.5 opacity-90">
-              {s?.instagram_url && <a href={s.instagram_url} target="_blank" rel="noreferrer">Instagram</a>}
-              {s?.facebook_url && <a href={s.facebook_url} target="_blank" rel="noreferrer">Facebook</a>}
-              {s?.telegram_url && <a href={s.telegram_url} target="_blank" rel="noreferrer">Telegram</a>}
-              {s?.tiktok_url && <a href={s.tiktok_url} target="_blank" rel="noreferrer">TikTok</a>}
+            <p className="eyebrow mb-3 text-[#826349] dark:text-[#A89078] font-bold uppercase tracking-wider text-xs">Follow</p>
+            <div className="flex flex-col gap-1.5 text-[#33251A] dark:text-[#E8DDD2]">
+              {s?.instagram_url && <a href={s.instagram_url} target="_blank" rel="noreferrer" className="hover:text-accent">Instagram</a>}
+              {s?.facebook_url && <a href={s.facebook_url} target="_blank" rel="noreferrer" className="hover:text-accent">Facebook</a>}
+              {s?.telegram_url && <a href={s.telegram_url} target="_blank" rel="noreferrer" className="hover:text-accent">Telegram</a>}
+              {s?.tiktok_url && <a href={s.tiktok_url} target="_blank" rel="noreferrer" className="hover:text-accent">TikTok</a>}
             </div>
           </div>
         </div>
 
         {/* Massive Brand Name at the Bottom of Footer (Like Discord, Laravel, Antigravity) */}
         <div className="relative w-full overflow-hidden my-8 sm:my-14 py-4 sm:py-8 text-center select-none pointer-events-none">
-          <span className="block w-full font-display font-black uppercase tracking-tighter text-[16vw] sm:text-[17.5vw] leading-[0.78] text-center whitespace-nowrap bg-gradient-to-b from-espresso-foreground/40 via-espresso-foreground/20 to-espresso-foreground/5 bg-clip-text text-transparent dark:from-white/40 dark:via-white/20 dark:to-white/5">
+          <span className="block w-full font-display font-black uppercase tracking-tighter text-[16vw] sm:text-[17.5vw] leading-[0.78] text-center whitespace-nowrap bg-gradient-to-b from-[#241A12]/45 via-[#241A12]/20 to-[#241A12]/5 bg-clip-text text-transparent dark:from-white/45 dark:via-white/20 dark:to-white/5">
             La Nouvelle
           </span>
         </div>
 
-        <div className="pb-8 pt-2 text-center text-xs opacity-60">
+        <div className="pb-8 pt-2 text-center text-xs text-[#6B533E] dark:text-[#9E8B7B]">
           © {new Date().getFullYear()} La Nouvelle Café & Restaurant ·{" "}
           <Link to="/auth" className="hover:underline">Staff</Link>
         </div>
