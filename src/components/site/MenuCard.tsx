@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, UtensilsCrossed, Sparkles, X } from "lucide-react";
+import { Plus, UtensilsCrossed, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import type { PublicMenuItem } from "@/lib/cafe.functions";
 import { formatBirr } from "@/lib/format";
 
@@ -19,46 +19,16 @@ export function MenuCard({ item, onSelect }: { item: PublicMenuItem; onSelect: (
       {/* Specular sheen on card hover */}
       <div className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 transition-opacity duration-500 group-hover:opacity-100 bg-gradient-to-br from-accent/10 via-primary/5 to-transparent" />
 
-      {/* Top badges: Ingredients button & Sold out badge */}
-      <div className="relative z-30 flex items-center justify-between gap-2">
-        {item.description ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowIngredients(!showIngredients);
-            }}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold transition-all duration-200 cursor-pointer backdrop-blur-md ${
-              showIngredients
-                ? "bg-accent text-accent-foreground shadow-sm ring-2 ring-accent/30"
-                : "bg-secondary/80 hover:bg-accent/20 hover:text-accent text-foreground/80 border border-border/50"
-            }`}
-            aria-label="Toggle ingredients"
-          >
-            {showIngredients ? (
-              <>
-                <X className="size-3" />
-                <span>Close</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="size-3 text-accent" />
-                <span>Ingredients</span>
-              </>
-            )}
-          </button>
-        ) : (
-          <span />
-        )}
-
-        {!item.available && (
+      {/* Top: Sold out badge if unavailable */}
+      {!item.available && (
+        <div className="absolute top-3.5 right-3.5 z-20">
           <span className="rounded-full border border-destructive/30 bg-destructive/15 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-destructive backdrop-blur-md">
             Sold out
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* GLORIFIED FOOD STAGE WITH INGREDIENTS OVERLAY */}
+      {/* GLORIFIED FOOD STAGE */}
       <div className="relative flex h-44 sm:h-52 w-full items-center justify-center py-2 overflow-hidden">
         {/* Soft radial warm illumination pedestal behind the dish */}
         <div className="pointer-events-none absolute inset-x-6 top-1/2 -translate-y-1/2 h-32 rounded-full bg-radial from-amber-500/15 via-accent/10 to-transparent blur-2xl opacity-60 transition-all duration-500 group-hover:opacity-100 group-hover:scale-120" />
@@ -78,7 +48,7 @@ export function MenuCard({ item, onSelect }: { item: PublicMenuItem; onSelect: (
           </div>
         )}
 
-        {/* INGREDIENTS IN-CARD REVEAL OVERLAY */}
+        {/* INGREDIENTS REVEAL OVERLAY OVER THE FOOD AREA */}
         {showIngredients && (
           <div
             onClick={(e) => e.stopPropagation()}
@@ -107,8 +77,35 @@ export function MenuCard({ item, onSelect }: { item: PublicMenuItem; onSelect: (
         )}
       </div>
 
+      {/* UNDER THE FOOD: THE INGREDIENTS BUTTON */}
+      {item.description && (
+        <div className="relative z-20 my-1.5 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowIngredients(!showIngredients);
+            }}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-semibold transition-all duration-200 cursor-pointer shadow-xs ${
+              showIngredients
+                ? "bg-accent text-accent-foreground ring-2 ring-accent/30 shadow-sm"
+                : "bg-secondary/90 hover:bg-accent/20 hover:text-accent text-foreground/85 border border-border/60"
+            }`}
+            aria-label="Toggle ingredients"
+          >
+            <Sparkles className="size-3 text-accent" />
+            <span>{showIngredients ? "Hide Ingredients" : "Ingredients"}</span>
+            {showIngredients ? (
+              <ChevronUp className="size-3 text-accent-foreground" />
+            ) : (
+              <ChevronDown className="size-3 opacity-60" />
+            )}
+          </button>
+        </div>
+      )}
+
       {/* MINIMAL & REFINED TEXT */}
-      <div className="relative z-10 mt-2 flex flex-col justify-between">
+      <div className="relative z-10 mt-1 flex flex-col justify-between">
         <div>
           <h3 className="font-display text-base sm:text-lg font-medium tracking-tight text-foreground transition-colors group-hover:text-primary leading-snug">
             {item.name}
@@ -121,7 +118,7 @@ export function MenuCard({ item, onSelect }: { item: PublicMenuItem; onSelect: (
         </div>
 
         {/* Action bar with price and sleek Add pill */}
-        <div className="mt-3.5 flex items-center justify-between border-t border-border/40 pt-3">
+        <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-3">
           <span className="font-display text-base sm:text-lg font-bold tracking-tight text-primary">
             {formatBirr(item.price)}
           </span>
