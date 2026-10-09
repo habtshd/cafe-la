@@ -135,8 +135,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
       <main className="flex-1">{children}</main>
 
-      <footer className="border-t border-border bg-espresso text-espresso-foreground">
-        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 md:grid-cols-3">
+      <footer className="relative overflow-hidden border-t border-border bg-espresso text-espresso-foreground transition-colors duration-300">
+        <div className="mx-auto grid max-w-6xl gap-10 px-5 pt-14 pb-10 md:grid-cols-3">
           <div>
             <Logo variant={isDark ? "white" : "brown"} className="h-12" />
             {s?.tagline && <p className="mt-4 max-w-xs text-sm opacity-90">{s.tagline}</p>}
@@ -157,7 +157,15 @@ export function SiteShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </div>
-        <div className="border-t border-espresso-foreground/10 py-5 text-center text-xs opacity-50">
+
+        {/* Massive Brand Name at the Bottom of Footer (Like Discord, Laravel, Antigravity) */}
+        <div className="relative w-full overflow-hidden border-t border-espresso-foreground/10 pt-6 pb-2 text-center select-none pointer-events-none">
+          <span className="block w-full font-display font-extrabold uppercase tracking-tighter text-[13.5vw] leading-[0.8] text-center whitespace-nowrap bg-gradient-to-b from-espresso-foreground/25 via-espresso-foreground/10 to-transparent bg-clip-text text-transparent dark:from-white/25 dark:via-white/10 dark:to-transparent">
+            La Nouvelle
+          </span>
+        </div>
+
+        <div className="border-t border-espresso-foreground/10 py-5 text-center text-xs opacity-60">
           © {new Date().getFullYear()} La Nouvelle Café & Restaurant ·{" "}
           <Link to="/auth" className="hover:underline">Staff</Link>
         </div>
