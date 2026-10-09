@@ -19,8 +19,8 @@ async function main() {
       email: "info@lanouvellecafe.com",
       address: "Bole, Behind Millennium Hall, Next to Ambassador Hotel, Addis Ababa, Ethiopia",
       opening_hours: "Mon - Sun: 7:00 AM - 11:30 PM",
-      map_url: "https://maps.google.com/?q=La+Nouvelle+Cafe+Bole+Addis+Ababa",
-      instagram_url: "https://www.instagram.com/explore/tags/lanouvelleaddis/",
+      map_url: "https://maps.app.goo.gl/vjYRA27pJZs3yK377",
+      instagram_url: "https://www.instagram.com/la_nouvelle_addis?utm_source=ig_web_button_share_sheet&xtok=ZDNlZDc0MzIxNw==",
       facebook_url: "https://www.facebook.com/people/La-Nouvelle/100063715206263/",
       tiktok_url: "https://www.tiktok.com/tag/lanouvelleaddis",
       telegram_url: "https://t.me/lanouvellecafe",
@@ -55,7 +55,11 @@ async function main() {
     { name: "Fresh Seafood", sort_order: 4 },
     { name: "Bistro & Sandwiches", sort_order: 5 },
     { name: "Artisan Salads", sort_order: 6 },
-    { name: "Specialty Coffee & Beverages", sort_order: 7 },
+    { name: "Specialty Coffee & Espresso Bar", sort_order: 7 },
+    { name: "Signature Mocktails & Spritzes", sort_order: 8 },
+    { name: "Cold-Pressed Juices & Wellness", sort_order: 9 },
+    { name: "Artisanal Teas & Global Infusions", sort_order: 10 },
+    { name: "Gourmet Frappes & Luxury Shakes", sort_order: 11 },
   ];
 
   for (const cat of categories) {

@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Search, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Search, Sparkles, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 import { SiteShell } from "@/components/site/SiteShell";
 import { MenuCard } from "@/components/site/MenuCard";
 import { ProductDialog } from "@/components/site/ProductDialog";
@@ -10,13 +11,18 @@ import { menuQuery, settingsQuery } from "@/lib/queries";
 import type { PublicMenuItem } from "@/lib/cafe.functions";
 import { cn } from "@/lib/utils";
 
+const menuSearchSchema = z.object({
+  item: z.string().optional(),
+});
+
 export const Route = createFileRoute("/menu")({
+  validateSearch: menuSearchSchema,
   head: () => ({
     meta: [
       { title: "Menu — La Nouvelle Café & Restaurant" },
-      { name: "description", content: "World-class international menu, artisan wood-fired pizza, prime steaks, seafood, and bistro specialties at La Nouvelle. Order online in a few taps." },
+      { name: "description", content: "World-class international menu, artisan wood-fired pizza, prime steaks, seafood, specialty coffee, and handcrafted drinks at La Nouvelle. Order online in a few taps." },
       { property: "og:title", content: "Menu — La Nouvelle Café & Restaurant" },
-      { property: "og:description", content: "Browse chef's signature dishes, steaks, pasta, artisan pizza, and bistro cuisine." },
+      { property: "og:description", content: "Browse chef's signature dishes, steaks, pasta, artisan pizza, specialty coffees, mocktails, and international drinks." },
     ],
   }),
   loader: ({ context }) =>
@@ -27,9 +33,42 @@ export const Route = createFileRoute("/menu")({
 function MenuPage() {
   const { data: menu } = useSuspenseQuery(menuQuery);
   const { data: s } = useSuspenseQuery(settingsQuery);
+  const { item: targetItemId } = Route.useSearch();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<string | "all">("all");
   const [selected, setSelected] = useState<PublicMenuItem | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+
+  // When navigated with ?item=<id>, select and highlight the matched food on the menu page (no popup modal)
+  useEffect(() => {
+    if (!targetItemId || !menu?.items?.length) return () => {};
+    const target = targetItemId.trim().toLowerCase();
+    const found =
+      menu.items.find((i) => i.id.toLowerCase() === target) ||
+      menu.items.find((i) => i.name.toLowerCase() === target) ||
+      menu.items.find((i) => i.name.toLowerCase().includes(target));
+
+    if (!found) return () => {};
+
+    setCat("all");
+    setQ("");
+    setSelectedItemId(found.id);
+    // Explicitly do NOT open popup window on navigation
+
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`dish-${found.id}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [targetItemId, menu?.items]);
+
+  const matchedItem = useMemo(() => {
+    if (!selectedItemId) return null;
+    return menu.items.find((i) => i.id === selectedItemId) ?? null;
+  }, [selectedItemId, menu.items]);
 
   const groups = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -49,7 +88,7 @@ function MenuPage() {
         <div>
           <h1 className="text-4xl font-bold tracking-tight text-foreground font-display sm:text-5xl">Menu</h1>
           <p className="mt-1.5 text-sm text-muted-foreground sm:text-base">
-            Artisan wood-fired pizzas, prime steaks, fresh seafood & bistro classics.
+            Artisan wood-fired pizzas, prime steaks, fresh seafood, specialty coffees, mocktails & international drinks.
           </p>
         </div>
         {!s.accepting_orders && (
@@ -100,6 +139,24 @@ function MenuPage() {
           )}
         </div>
 
+        {matchedItem && (
+          <div className="mt-4 flex items-center justify-between rounded-2xl border border-accent/40 bg-accent/10 px-4 py-2.5 backdrop-blur-md">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="size-4 text-accent animate-pulse" />
+              <span className="text-xs sm:text-sm font-medium text-foreground">
+                Matched Food: <strong className="font-semibold text-accent">{matchedItem.name}</strong>
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedItemId(null)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              Clear selection
+            </button>
+          </div>
+        )}
+
         {groups.length === 0 ? (
           <p className="mt-10 rounded-2xl border border-dashed border-border/80 p-12 text-center text-muted-foreground">
             {menu.items.length === 0 ? "Our menu is being prepared. Check back soon." : "No items match your search."}
@@ -119,7 +176,15 @@ function MenuPage() {
               </div>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
                 {g.items.map((i) => (
-                  <MenuCard key={i.id} item={i} onSelect={() => setSelected(i)} />
+                  <MenuCard
+                    key={i.id}
+                    item={i}
+                    isSelected={selectedItemId === i.id}
+                    onSelect={() => {
+                      setSelectedItemId(i.id);
+                      setSelected(i);
+                    }}
+                  />
                 ))}
               </div>
             </section>

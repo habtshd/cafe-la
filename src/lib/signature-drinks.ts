@@ -1,0 +1,243 @@
+import amalfiSpritzImg from "@/assets/amalfi-spritz.jpg";
+import passionfruitMojitoImg from "@/assets/passionfruit-mojito.jpg";
+import yirgacheffeCoffeeImg from "@/assets/yirgacheffe-coffee.jpg";
+import spanishCortadoImg from "@/assets/spanish-cortado.jpg";
+import matchaLatteImg from "@/assets/matcha-latte.jpg";
+import chocolateFrappeImg from "@/assets/chocolate-frappe.jpg";
+import mangoSmoothieImg from "@/assets/mango-smoothie.jpg";
+import greenDetoxImg from "@/assets/green-detox.jpg";
+import berrySpritzImg from "@/assets/berry-spritz.jpg";
+import blueLagoonImg from "@/assets/blue-lagoon.jpg";
+import moroccanMintTeaImg from "@/assets/moroccan-mint-tea.jpg";
+import icedCaramelLatteImg from "@/assets/iced-caramel-latte.jpg";
+import cappuccinoImg from "@/assets/Cappuccino Cup with Latte Art.png";
+import layeredIcedCoffeeImg from "@/assets/Layered Iced Coffee with Condensation.png";
+
+export interface SignatureDrink {
+  id: string;
+  name: string;
+  subtitle: string;
+  category: string;
+  region: string;
+  description: string;
+  price: number;
+  image: string;
+  badges: string[];
+  volume?: string;
+  temperature: "hot" | "iced" | "blended" | "chilled";
+  flavorProfile: string;
+  flag: string;
+}
+
+export const SIGNATURE_DRINKS: SignatureDrink[] = [
+  {
+    id: "d-cappuccino-latte-art",
+    name: "Artisan Velvet Cappuccino",
+    subtitle: "Double Espresso, Steamed Whole Milk & Rosetta Latte Art",
+    category: "Specialty Coffee & Espresso Bar",
+    region: "Italian Barista Reserve",
+    flag: "☕",
+    description: "Rich dark-roasted espresso poured with velvety steamed whole milk, microfoam and delicate heart rosetta latte art.",
+    price: 240,
+    image: cappuccinoImg,
+    volume: "240 ml",
+    temperature: "hot",
+    badges: ["Latte Art", "Velvet Microfoam", "Barista Classic"],
+    flavorProfile: "Rich roasted cocoa, sweet creamy milk foam, hazelnut crema",
+  },
+  {
+    id: "d-layered-iced-coffee",
+    name: "Layered Iced Caramel Latte",
+    subtitle: "Cold Espresso Mist, Whole Milk, Ice & Caramel Drizzle",
+    category: "Specialty Coffee & Espresso Bar",
+    region: "International Specialty",
+    flag: "🧊",
+    description: "Chilled whole milk layered beneath freshly pulled espresso over glistening ice cubes with sweet caramel drizzle.",
+    price: 290,
+    image: layeredIcedCoffeeImg,
+    volume: "420 ml",
+    temperature: "iced",
+    badges: ["Double Shot", "Cold-Dripped", "Condensation Glistening"],
+    flavorProfile: "Bold espresso contrast, sweet vanilla cream, buttery caramel",
+  },
+  {
+    id: "d1111111-1111-4111-b111-111111111111",
+    name: "Amalfi Sunburst Spritz",
+    subtitle: "Italian Blood Orange, San Pellegrino & Fresh Rosemary",
+    category: "Signature Mocktails & Spritzes",
+    region: "Amalfi Coast, Italy",
+    flag: "🇮🇹",
+    description: "Vibrant Sicilian blood orange essence, crisp sparkling mineral tonic, chilled crystal ice, citrus wheel and fresh garden rosemary sprig.",
+    price: 390,
+    image: amalfiSpritzImg,
+    volume: "380 ml",
+    temperature: "chilled",
+    badges: ["House Signature", "Zero-Proof", "Citrus Botanicals"],
+    flavorProfile: "Bittersweet blood orange, effervescent tonic, herbal rosemary",
+  },
+  {
+    id: "d2222222-2222-4222-b222-222222222222",
+    name: "Passiflora Royal Mojito",
+    subtitle: "Muddled Cuban Spearmint, Fresh Lime & Passionfruit Pulp",
+    category: "Signature Mocktails & Spritzes",
+    region: "Havana, Cuba",
+    flag: "🇨🇺",
+    description: "Fresh Ethiopian passionfruit nectar, hand-crushed garden spearmint, muddled lime wedges, crushed ice & effervescent sparkling soda.",
+    price: 420,
+    image: passionfruitMojitoImg,
+    volume: "420 ml",
+    temperature: "chilled",
+    badges: ["Fresh Passionfruit", "Crushed Ice", "Bespoke Mocktail"],
+    flavorProfile: "Tangy tropical passionfruit, cooling spearmint, zesty lime",
+  },
+  {
+    id: "d3333333-3333-4333-b333-333333333333",
+    name: "Ethiopian Yirgacheffe V60 Reserve",
+    subtitle: "Single-Origin Light Roast, Bergamot & Wild Honey Finish",
+    category: "Specialty Coffee & Espresso Bar",
+    region: "Yirgacheffe, Ethiopia",
+    flag: "🇪🇹",
+    description: "Artisan single-origin washed Yirgacheffe beans hand-poured through V60 filter. Jasmine florals, bright citrus bergamot & sweet peach finish.",
+    price: 260,
+    image: yirgacheffeCoffeeImg,
+    volume: "300 ml",
+    temperature: "hot",
+    badges: ["Single-Origin", "Grade 1 Arabica", "Hand-Poured V60"],
+    flavorProfile: "Jasmine floral, lemon zest, sweet wild honey finish",
+  },
+  {
+    id: "d4444444-4444-4444-b444-444444444444",
+    name: "Spanish Cortado Doble",
+    subtitle: "Double Ristretto Espresso & Velvety Steamed Whole Milk",
+    category: "Specialty Coffee & Espresso Bar",
+    region: "Madrid, Spain",
+    flag: "🇪🇸",
+    description: "Equal parts intense double ristretto espresso and silky textured steamed whole milk served in a traditional faceted glass tumbler.",
+    price: 240,
+    image: spanishCortadoImg,
+    volume: "180 ml",
+    temperature: "hot",
+    badges: ["Double Ristretto", "Silky Microfoam", "European Classic"],
+    flavorProfile: "Deep roasted cocoa, hazelnut crema, rounded milk sweetness",
+  },
+  {
+    id: "d5555555-5555-4555-b555-555555555555",
+    name: "Ceremonial Uji Matcha Cloud Latte",
+    subtitle: "First-Harvest Japanese Matcha & Vanilla Oat Cloud",
+    category: "Artisanal Teas & Global Infusions",
+    region: "Kyoto, Japan",
+    flag: "🇯🇵",
+    description: "Stone-ground ceremonial first-harvest green tea from Uji, Kyoto, whisked with hot spring water and topped with creamy vanilla oat milk foam.",
+    price: 360,
+    image: matchaLatteImg,
+    volume: "350 ml",
+    temperature: "hot",
+    badges: ["Ceremonial Grade", "Rich Antioxidants", "Oat Milk Cloud"],
+    flavorProfile: "Earthy umami, vegetal sweet green tea, silky vanilla froth",
+  },
+  {
+    id: "d6666666-6666-4666-b666-666666666666",
+    name: "Belgian Grand Cru Chocolate Frappe",
+    subtitle: "70% Callebaut Dark Chocolate, Whipped Cream & Cocoa Nibs",
+    category: "Gourmet Frappes & Luxury Shakes",
+    region: "Brussels, Belgium",
+    flag: "🇧🇪",
+    description: "Blended Belgian single-origin dark chocolate, espresso mist, whole milk, shaved cocoa nibs, mountain of whipped cream & chocolate ganache drizzle.",
+    price: 460,
+    image: chocolateFrappeImg,
+    volume: "450 ml",
+    temperature: "blended",
+    badges: ["Belgian Callebaut", "Double Whipped", "Decadent Treat"],
+    flavorProfile: "Deep 70% dark chocolate, roasted cocoa nibs, velvet cream",
+  },
+  {
+    id: "d7777777-7777-4777-b777-777777777777",
+    name: "Tropical Mango & Sunrise Papaya Blend",
+    subtitle: "Cold-Pressed Rift Valley Mango & Golden Papaya",
+    category: "Cold-Pressed Juices & Wellness",
+    region: "Rift Valley, Ethiopia",
+    flag: "🇪🇹",
+    description: "Sun-ripened Ethiopian Rift Valley mangoes, tropical golden papaya, splash of lime and passionfruit nectar cold-pressed fresh daily.",
+    price: 320,
+    image: mangoSmoothieImg,
+    volume: "400 ml",
+    temperature: "chilled",
+    badges: ["100% Raw Fruit", "No Added Sugar", "Vitamin Boost"],
+    flavorProfile: "Lush velvety mango, fragrant sweet papaya, citrus tang",
+  },
+  {
+    id: "d8888888-8888-4888-b888-488888888888",
+    name: "Emerald Glow Detox Tonic",
+    subtitle: "Crisp Green Apple, Celery, Cucumber, Ginger & Lemon",
+    category: "Cold-Pressed Juices & Wellness",
+    region: "International Wellness",
+    flag: "🌱",
+    description: "Revitalizing cold-pressed elixir featuring Granny Smith apple, fresh celery, cucumber, baby spinach, crushed ginger root & fresh lemon.",
+    price: 340,
+    image: greenDetoxImg,
+    volume: "380 ml",
+    temperature: "chilled",
+    badges: ["Cold-Pressed", "Digestive Ginger", "Daily Immunity"],
+    flavorProfile: "Crisp tart green apple, soothing cucumber, warming ginger kick",
+  },
+  {
+    id: "d9999999-9999-4999-b999-499999999999",
+    name: "Lychee Rose & Wild Hibiscus Spritz",
+    subtitle: "Asian Sweet Lychee, French Rose Water & Sparkling Botanicals",
+    category: "Signature Mocktails & Spritzes",
+    region: "Parisian-Asian Fusion",
+    flag: "🇫🇷",
+    description: "Clarified sweet lychee nectar, distilled French rose water, wild hibiscus tea reduction, crushed berries and sparkling soda with edible flowers.",
+    price: 410,
+    image: berrySpritzImg,
+    volume: "360 ml",
+    temperature: "chilled",
+    badges: ["Botanical Craft", "Aromatic Floral", "Zero Alcohol"],
+    flavorProfile: "Delicate floral rose, sweet lychee, tart ruby hibiscus",
+  },
+  {
+    id: "daaaaaaa-aaaa-4aaa-baaa-aaaaaaaaaaaa",
+    name: "Blue Mediterranean Lagoon Fizz",
+    subtitle: "Blue Citrus Zest, Lemon Oleo-Saccharum & Butterfly Pea Flower",
+    category: "Signature Mocktails & Spritzes",
+    region: "Mediterranean Coast",
+    flag: "🌊",
+    description: "Natural blue butterfly pea infusion, fresh clarified lemon juice, Mediterranean curacao citrus syrup, crushed ice & bubbling tonic water.",
+    price: 380,
+    image: blueLagoonImg,
+    volume: "380 ml",
+    temperature: "chilled",
+    badges: ["Natural Color", "Crushed Ice", "Refreshing Fizz"],
+    flavorProfile: "Bright citrus zest, sweet lemon drop, effervescent tonic",
+  },
+  {
+    id: "dbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb",
+    name: "Royal Moroccan Spearmint Infusion",
+    subtitle: "Gunpowder Green Tea, Fresh Mountain Mint & Amber Crystal",
+    category: "Artisanal Teas & Global Infusions",
+    region: "Marrakech, Morocco",
+    flag: "🇲🇦",
+    description: "Classic North African hospitality ritual: premium gunpowder green tea steeped with copious bruised garden spearmint leaves and amber raw cane sugar.",
+    price: 250,
+    image: moroccanMintTeaImg,
+    volume: "320 ml",
+    temperature: "hot",
+    badges: ["Steeped Table-side", "Fresh Spearmint", "Digestif Tradition"],
+    flavorProfile: "Crisp refreshing spearmint, smoky green tea, caramelized sweetness",
+  },
+  {
+    id: "dccccccc-cccc-4ccc-bccc-cccccccccccc",
+    name: "Iced Madagascar Vanilla Macchiato",
+    subtitle: "Double Espresso, Sea Salt Cold Foam & Caramel Drizzle",
+    category: "Specialty Coffee & Espresso Bar",
+    region: "International Specialty",
+    flag: "🇲🇬",
+    description: "Double shot of dark roasted espresso layered over chilled whole milk, real Madagascar bourbon vanilla bean syrup, topped with sea salt cold foam & caramel drizzle.",
+    price: 310,
+    image: icedCaramelLatteImg,
+    volume: "400 ml",
+    temperature: "iced",
+    badges: ["Bourbon Vanilla", "Sea Salt Foam", "Barista Favorite"],
+    flavorProfile: "Rich espresso punch, buttery caramel, silky sweet vanilla",
+  },
+];

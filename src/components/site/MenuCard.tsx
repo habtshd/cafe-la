@@ -2,8 +2,17 @@ import { useState } from "react";
 import { Plus, UtensilsCrossed, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import type { PublicMenuItem } from "@/lib/cafe.functions";
 import { formatBirr } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
-export function MenuCard({ item, onSelect }: { item: PublicMenuItem; onSelect: () => void }) {
+export function MenuCard({
+  item,
+  onSelect,
+  isSelected = false,
+}: {
+  item: PublicMenuItem;
+  onSelect: () => void;
+  isSelected?: boolean;
+}) {
   const [showIngredients, setShowIngredients] = useState(false);
 
   // Split description into individual ingredient pills
@@ -13,11 +22,27 @@ export function MenuCard({ item, onSelect }: { item: PublicMenuItem; onSelect: (
 
   return (
     <div
+      id={`dish-${item.id}`}
       onClick={onSelect}
-      className="group relative flex w-full flex-col justify-between overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-b from-card/90 via-card/65 to-card/45 p-4 sm:p-5 text-left transition-all duration-300 hover:-translate-y-1.5 hover:border-accent/40 hover:shadow-[0_22px_44px_-14px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_22px_44px_-14px_rgba(0,0,0,0.55)] cursor-pointer backdrop-blur-sm"
+      className={cn(
+        "group relative flex w-full flex-col justify-between overflow-hidden rounded-3xl border p-4 sm:p-5 text-left transition-all duration-500 cursor-pointer backdrop-blur-sm scroll-mt-28",
+        isSelected
+          ? "border-accent ring-4 ring-accent ring-offset-4 ring-offset-background shadow-[0_0_0_4px_rgba(202,138,4,0.35),0_24px_48px_-12px_rgba(202,138,4,0.3)] bg-gradient-to-b from-accent/20 via-card/95 to-card scale-[1.02]"
+          : "border-border/60 bg-gradient-to-b from-card/90 via-card/65 to-card/45 hover:-translate-y-1.5 hover:border-accent/40 hover:shadow-[0_22px_44px_-14px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_22px_44px_-14px_rgba(0,0,0,0.55)]"
+      )}
     >
       {/* Specular sheen on card hover */}
       <div className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 transition-opacity duration-500 group-hover:opacity-100 bg-gradient-to-br from-accent/10 via-primary/5 to-transparent" />
+
+      {/* Top Left: Selected Food badge */}
+      {isSelected && (
+        <div className="absolute top-3.5 left-3.5 z-20">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-accent text-accent-foreground px-3 py-1 text-[11px] font-bold uppercase tracking-wider shadow-lg animate-pulse">
+            <Sparkles className="size-3" />
+            Selected Food
+          </span>
+        </div>
+      )}
 
       {/* Top: Sold out badge if unavailable */}
       {!item.available && (

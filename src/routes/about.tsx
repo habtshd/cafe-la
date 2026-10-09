@@ -45,7 +45,7 @@ function About() {
 
           <div className="mt-8 flex flex-wrap gap-4">
             <Button asChild size="lg" variant="accent">
-              <Link to="/menu">Explore Our Menu</Link>
+              <Link to="/menu">View Our Menu</Link>
             </Button>
             {s.offers_reservations && (
               <Button asChild size="lg" variant="outline">
@@ -146,7 +146,14 @@ function About() {
             {s.address && (
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 <MapPin className="size-4 text-accent shrink-0" />
-                <span>{s.address}</span>
+                <a
+                  href={s.map_url || "https://maps.app.goo.gl/vjYRA27pJZs3yK377"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-primary hover:underline transition-colors"
+                >
+                  {s.address}
+                </a>
               </p>
             )}
             {s.opening_hours && (

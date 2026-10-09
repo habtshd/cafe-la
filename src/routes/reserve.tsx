@@ -78,7 +78,7 @@ function Reserve() {
               We'll call you at <span className="font-semibold text-foreground">{f.phone}</span> to confirm availability.
             </p>
             <Button asChild className="mt-6" variant="accent">
-              <Link to="/menu">Explore Menu While Waiting</Link>
+              <Link to="/menu">View Menu While Waiting</Link>
             </Button>
           </div>
         ) : (

@@ -123,9 +123,16 @@ function Checkout() {
           <h2 className="text-xl">Summary</h2>
           <ul className="mt-4 space-y-2 text-sm">
             {cart.lines.map((l) => (
-              <li key={l.key} className="flex justify-between gap-3">
-                <span>{l.quantity}× {l.name}</span>
-                <span>{formatBirr(l.price * l.quantity)}</span>
+              <li key={l.key} className="space-y-0.5">
+                <div className="flex justify-between gap-3">
+                  <span className="font-medium">{l.quantity}× {l.name}</span>
+                  <span className="shrink-0">{formatBirr(l.price * l.quantity)}</span>
+                </div>
+                {l.note && (
+                  <p className="text-xs text-accent line-clamp-2">
+                    {l.note}
+                  </p>
+                )}
               </li>
             ))}
           </ul>

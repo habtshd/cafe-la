@@ -45,7 +45,7 @@ function OrderPage() {
       </SiteShell>
     );
   }
-  const steps = statusSteps(o.order_type);
+  const steps = statusSteps(o.order_type as "pickup" | "delivery" | "dine_in");
   const current = steps.indexOf(o.status as (typeof steps)[number]);
 
   return (
@@ -54,7 +54,7 @@ function OrderPage() {
         {isNew && <p className="eyebrow text-success">Order confirmed</p>}
         <h1 className="mt-2 text-4xl">Order #{o.order_number}</h1>
         <p className="mt-2 text-muted-foreground">
-          {ORDER_TYPE_LABEL[o.order_type]} · {o.customer_name} · {o.customer_phone}
+          {(ORDER_TYPE_LABEL as Record<string, string>)[o.order_type] ?? o.order_type} · {o.customer_name} · {o.customer_phone}
         </p>
 
         <div className="mt-10 rounded-md border bg-card p-6 shadow-soft">
@@ -92,10 +92,10 @@ function OrderPage() {
             {o.order_items.map((it, i) => (
               <li key={i} className="flex justify-between gap-4 py-3">
                 <div>
-                  <p>{it.quantity}× {it.item_name}</p>
-                  {it.note && <p className="text-xs text-muted-foreground">{it.note}</p>}
+                  <p className="font-medium">{it.quantity}× {it.item_name}</p>
+                  {it.note && <p className="text-xs text-accent mt-0.5">{it.note}</p>}
                 </div>
-                <span>{formatBirr(Number(it.unit_price) * it.quantity)}</span>
+                <span className="font-medium shrink-0">{formatBirr(Number(it.unit_price) * it.quantity)}</span>
               </li>
             ))}
           </ul>

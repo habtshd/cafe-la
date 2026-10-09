@@ -16,7 +16,7 @@ model BusinessSettings {
   email               String   @default("info@lanouvellecafe.com")
   address             String   @default("Bole Medhanialem, Near Edna Mall, Addis Ababa, Ethiopia")
   opening_hours       String   @default("Mon - Sun: 7:00 AM - 11:30 PM")
-  map_url             String   @default("https://maps.google.com")
+  map_url             String   @default("https://maps.app.goo.gl/vjYRA27pJZs3yK377")
   instagram_url       String   @default("https://instagram.com")
   facebook_url        String   @default("https://facebook.com")
   tiktok_url          String   @default("https://tiktok.com")

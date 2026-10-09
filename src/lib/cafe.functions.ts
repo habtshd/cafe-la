@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "./prisma";
 import { computeTotals, type OrderType } from "./format";
 import { SIGNATURE_FOODS } from "./signature-foods";
+import { SIGNATURE_DRINKS } from "./signature-drinks";
 
 export type Settings = {
   id: number;
@@ -37,8 +38,8 @@ export const DEFAULT_SETTINGS: Settings = {
   email: "info@lanouvellecafe.com",
   address: "Bole, Behind Millennium Hall, Next to Ambassador Hotel, Addis Ababa, Ethiopia",
   opening_hours: "Mon - Sun: 7:00 AM - 11:30 PM",
-  map_url: "https://maps.google.com/?q=La+Nouvelle+Cafe+Bole+Addis+Ababa",
-  instagram_url: "https://www.instagram.com/explore/tags/lanouvelleaddis/",
+  map_url: "https://maps.app.goo.gl/vjYRA27pJZs3yK377",
+  instagram_url: "https://www.instagram.com/la_nouvelle_addis?utm_source=ig_web_button_share_sheet&xtok=ZDNlZDc0MzIxNw==",
   facebook_url: "https://www.facebook.com/people/La-Nouvelle/100063715206263/",
   tiktok_url: "https://www.tiktok.com/tag/lanouvelleaddis",
   telegram_url: "https://t.me/lanouvellecafe",
@@ -135,18 +136,32 @@ export const getPublicMenu = createServerFn({ method: "GET" }).handler(async () 
     }
   }
 
-  const signatureItems: PublicMenuItem[] = SIGNATURE_FOODS.map((s) => ({
-    id: s.id,
-    category_id: s.category,
-    name: s.name,
-    description: s.description,
-    price: s.price,
-    available: true,
-    featured: true,
-    imageUrl: s.image,
-  }));
+  const signatureItems: PublicMenuItem[] = [
+    ...SIGNATURE_FOODS.map((s) => ({
+      id: s.id,
+      category_id: s.category,
+      name: s.name,
+      description: s.description,
+      price: s.price,
+      available: true,
+      featured: true,
+      imageUrl: s.image,
+    })),
+    ...SIGNATURE_DRINKS.map((d) => ({
+      id: d.id,
+      category_id: d.category,
+      name: d.name,
+      description: d.description,
+      price: d.price,
+      available: true,
+      featured: true,
+      imageUrl: d.image,
+    })),
+  ];
 
-  const signatureCategoryNames = Array.from(new Set(SIGNATURE_FOODS.map((s) => s.category)));
+  const signatureCategoryNames = Array.from(
+    new Set([...SIGNATURE_FOODS.map((s) => s.category), ...SIGNATURE_DRINKS.map((d) => d.category)])
+  );
   const signatureCategories = signatureCategoryNames.map((name, idx) => ({
     id: name,
     name,
@@ -196,7 +211,11 @@ export const placeOrder = createServerFn({ method: "POST" })
     const enabled = { pickup: s.offers_pickup, delivery: s.offers_delivery, dine_in: s.offers_dine_in }[data.orderType];
     if (!enabled) throw new Error("That order type isn't available.");
 
-    const sigMap = new Map(SIGNATURE_FOODS.map((f) => [f.id, f]));
+    const allCatalog = [
+      ...SIGNATURE_FOODS.map((f) => ({ id: f.id, name: f.name, price: f.price })),
+      ...SIGNATURE_DRINKS.map((d) => ({ id: d.id, name: d.name, price: d.price })),
+    ];
+    const sigMap = new Map(allCatalog.map((f) => [f.id, f]));
     const lines = data.lines.map((l) => {
       const sig = sigMap.get(l.itemId);
       if (sig) return { ...l, name: sig.name, unitPrice: sig.price };
@@ -225,7 +244,7 @@ export const placeOrder = createServerFn({ method: "POST" })
           total: totals.total,
           items: {
             create: lines.map((l) => ({
-              menu_item_id: l.itemId.startsWith("f") ? null : l.itemId,
+              menu_item_id: l.itemId.startsWith("f") || l.itemId.startsWith("d") ? null : l.itemId,
               item_name: l.name,
               unit_price: l.unitPrice,
               quantity: l.quantity,

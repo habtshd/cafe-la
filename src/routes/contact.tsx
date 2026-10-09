@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import { Clock, Mail, MapPin, Phone, Instagram } from "lucide-react";
 import { SiteShell } from "@/components/site/SiteShell";
 import { settingsQuery } from "@/lib/queries";
 
@@ -23,6 +23,7 @@ function Contact() {
     s.address && { icon: MapPin, label: "Address", value: s.address, href: s.map_url || undefined },
     s.phone && { icon: Phone, label: "Phone", value: s.phone, href: `tel:${s.phone}` },
     s.email && { icon: Mail, label: "Email", value: s.email, href: `mailto:${s.email}` },
+    s.instagram_url && { icon: Instagram, label: "Instagram", value: "@la_nouvelle_addis", href: s.instagram_url },
     s.opening_hours && { icon: Clock, label: "Opening hours", value: s.opening_hours },
   ].filter(Boolean) as { icon: typeof MapPin; label: string; value: string; href?: string }[];
 

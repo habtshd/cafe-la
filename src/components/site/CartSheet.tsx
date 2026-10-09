@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Minus, Plus, ShoppingBag, Trash2, UtensilsCrossed } from "lucide-react";
+import { ArrowRight, Minus, Plus, ShoppingBag, Sparkles, Trash2, UtensilsCrossed } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart";
@@ -72,6 +72,14 @@ export function CartSheet() {
                         <p className="mt-0.5 text-xs text-muted-foreground">
                           {formatBirr(l.price)} each
                         </p>
+                      )}
+                      {l.note && (
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-accent/15 px-2 py-0.5 text-[11px] font-medium text-accent">
+                            <Sparkles className="size-3 shrink-0" />
+                            <span className="truncate max-w-[220px]">{l.note}</span>
+                          </span>
+                        </div>
                       )}
                     </div>
                   </div>

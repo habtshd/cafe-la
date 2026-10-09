@@ -59,12 +59,12 @@ function Orders() {
       ) : (
         <div className="mt-5 grid gap-3 lg:grid-cols-2">
           {list.map((o) => {
-            const next = nextStatus(o.status, o.order_type);
+            const next = nextStatus(o.status as "received" | "confirmed" | "preparing" | "ready" | "out_for_delivery" | "completed" | "cancelled", o.order_type as "pickup" | "delivery" | "dine_in");
             return (
               <div key={o.id} className="rounded-md border bg-card p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold">#{o.order_number} · {ORDER_TYPE_LABEL[o.order_type]}</p>
+                    <p className="font-semibold">#{o.order_number} · {(ORDER_TYPE_LABEL as Record<string, string>)[o.order_type] ?? o.order_type}</p>
                     <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(o.created_at), { addSuffix: true })}</p>
                   </div>
                   <p className="font-semibold">{formatBirr(o.total)}</p>

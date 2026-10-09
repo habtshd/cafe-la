@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Menu as MenuIcon, ShoppingBag, X } from "lucide-react";
+import { Menu as MenuIcon, ShoppingBag, X, Instagram } from "lucide-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useIsTelegram, useTelegramMainButton } from "@/hooks/use-telegram";
 import { useTheme } from "@/lib/theme";
@@ -143,14 +143,31 @@ export function SiteShell({ children }: { children: ReactNode }) {
           </div>
           <div className="text-sm">
             <p className="eyebrow mb-3 text-[#826349] dark:text-[#A89078] font-bold uppercase tracking-wider text-xs">Visit</p>
-            {s?.address ? <p className="whitespace-pre-line text-[#33251A] dark:text-[#E8DDD2]">{s.address}</p> : null}
+            {s?.address ? (
+              <a
+                href={s?.map_url || "https://maps.app.goo.gl/vjYRA27pJZs3yK377"}
+                target="_blank"
+                rel="noreferrer"
+                className="whitespace-pre-line text-[#33251A] dark:text-[#E8DDD2] hover:text-accent transition-colors block"
+              >
+                {s.address}
+              </a>
+            ) : null}
             {s?.opening_hours ? <p className="mt-2 whitespace-pre-line text-[#5C4533] dark:text-[#BFAF9F]">{s.opening_hours}</p> : null}
             {s?.phone && <a href={`tel:${s.phone}`} className="mt-2 block text-[#33251A] dark:text-[#E8DDD2] hover:text-accent">{s.phone}</a>}
           </div>
           <div className="text-sm">
             <p className="eyebrow mb-3 text-[#826349] dark:text-[#A89078] font-bold uppercase tracking-wider text-xs">Follow</p>
-            <div className="flex flex-col gap-1.5 text-[#33251A] dark:text-[#E8DDD2]">
-              {s?.instagram_url && <a href={s.instagram_url} target="_blank" rel="noreferrer" className="hover:text-accent">Instagram</a>}
+            <div className="flex flex-col gap-2 text-[#33251A] dark:text-[#E8DDD2]">
+              <a
+                href={s?.instagram_url || "https://www.instagram.com/la_nouvelle_addis?utm_source=ig_web_button_share_sheet&xtok=ZDNlZDc0MzIxNw=="}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 hover:text-accent transition-colors"
+              >
+                <Instagram className="size-4 text-accent" />
+                <span>Instagram (@la_nouvelle_addis)</span>
+              </a>
               {s?.facebook_url && <a href={s.facebook_url} target="_blank" rel="noreferrer" className="hover:text-accent">Facebook</a>}
               {s?.telegram_url && <a href={s.telegram_url} target="_blank" rel="noreferrer" className="hover:text-accent">Telegram</a>}
               {s?.tiktok_url && <a href={s.tiktok_url} target="_blank" rel="noreferrer" className="hover:text-accent">TikTok</a>}
