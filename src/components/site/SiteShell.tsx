@@ -138,7 +138,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <footer className="border-t border-border bg-espresso text-espresso-foreground">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 md:grid-cols-3">
           <div>
-            <Logo className="h-12" />
+            <Logo variant="white" className="h-12" />
             {s?.tagline && <p className="mt-4 max-w-xs text-sm opacity-90">{s.tagline}</p>}
           </div>
           <div className="text-sm">
