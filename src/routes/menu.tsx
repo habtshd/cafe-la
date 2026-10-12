@@ -7,8 +7,9 @@ import { SiteShell } from "@/components/site/SiteShell";
 import { MenuCard } from "@/components/site/MenuCard";
 import { ProductDialog } from "@/components/site/ProductDialog";
 import { Input } from "@/components/ui/input";
+import { CulinaryClock } from "@/components/site/Experience";
 import { menuQuery, settingsQuery } from "@/lib/queries";
-import type { PublicMenuItem } from "@/lib/cafe.functions";
+import { DEFAULT_SETTINGS, type PublicMenuItem } from "@/lib/cafe.functions";
 import { cn } from "@/lib/utils";
 
 const menuSearchSchema = z.object({
@@ -191,6 +192,10 @@ function MenuPage() {
           ))
         )}
       </div>
+
+      {/* Interactive 3D Culinary Clock Food Component above the footer */}
+      <CulinaryClock hours={s?.opening_hours || DEFAULT_SETTINGS.opening_hours} />
+
       <ProductDialog item={selected} onClose={() => setSelected(null)} />
     </SiteShell>
   );

@@ -1366,7 +1366,12 @@ export function CulinaryClock({ hours }: { hours: string }) {
                   type="button"
                   onClick={() => {
                     if (isActive) {
-                      window.location.href = `/menu?item=${item.food.id}`;
+                      const el = typeof document !== "undefined" ? document.getElementById(`dish-${item.food.id}`) : null;
+                      if (el) {
+                        el.scrollIntoView({ behavior: "smooth", block: "center" });
+                      } else {
+                        window.location.href = `/menu?item=${item.food.id}`;
+                      }
                     } else {
                       stepToDish(idx);
                     }

@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SiteShell } from "@/components/site/SiteShell";
 import {
   CulinaryBotanicals,
-  CulinaryClock,
   LeanCards,
   ReceiptPrinter,
   Studio,
@@ -77,12 +76,10 @@ function Home() {
   ];
 
   const cafeName = s?.cafe_name || DEFAULT_SETTINGS.cafe_name;
-  const hours = s?.opening_hours || DEFAULT_SETTINGS.opening_hours;
 
   return (
     <SiteShell>
       <Studio name={cafeName} />
-      <CulinaryClock hours={hours} />
       <InternationalShowcase />
       <LeanCards items={craftedItems} />
       <InternationalDrinksLounge />
