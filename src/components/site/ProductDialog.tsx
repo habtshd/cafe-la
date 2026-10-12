@@ -1,9 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Minus, Plus, SlidersHorizontal, RotateCcw, Sparkles } from "lucide-react";
+import { Minus, Plus, SlidersHorizontal, RotateCcw, Sparkles, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCart } from "@/lib/cart";
 import { formatBirr } from "@/lib/format";
 import type { PublicMenuItem } from "@/lib/cafe.functions";
@@ -26,6 +33,7 @@ export function ProductDialog({
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const [amounts, setAmounts] = useState<Record<string, IngredientAmount>>({});
+  const [isIngredientsOpen, setIsIngredientsOpen] = useState(false);
 
   const ingredients = useMemo(() => {
     return item ? getIngredientsForItem(item) : [];
@@ -35,6 +43,7 @@ export function ProductDialog({
   useEffect(() => {
     setQty(1);
     setNote("");
+    setIsIngredientsOpen(false);
     if (ingredients.length > 0) {
       const initial: Record<string, IngredientAmount> = {};
       for (const ing of ingredients) {
@@ -98,213 +107,224 @@ export function ProductDialog({
 
   return (
     <Dialog open={!!item} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-xl max-h-[92vh] flex flex-col p-0 overflow-hidden rounded-3xl border border-border/80 shadow-2xl bg-card">
+      <DialogContent
+        className={cn(
+          "glass-modal w-[94vw] max-h-[90vh] md:max-h-[85vh] p-0 gap-0 overflow-hidden rounded-3xl border border-border/60 dark:border-white/12 shadow-2xl flex flex-col md:flex-row",
+          item?.imageUrl ? "max-w-3xl lg:max-w-4xl" : "max-w-lg"
+        )}
+      >
         {item && (
           <>
-            {/* Scrollable Container with Food Details & Ingredient Pickers */}
-            <div className="flex-1 overflow-y-auto px-5 sm:px-6 pt-6 pb-4 space-y-6">
-              {/* Food Image Banner */}
-              {item.imageUrl && (
-                <div className="relative flex h-48 sm:h-56 w-full items-center justify-center overflow-hidden rounded-2xl border border-border/40 bg-radial from-amber-500/10 via-secondary/40 to-secondary/20 p-4">
+            {/* LEFT COLUMN: Food Focused Showcase (Big on the side) */}
+            {item.imageUrl && (
+              <div className="relative w-full md:w-[46%] lg:w-[48%] flex items-center justify-center p-6 md:p-8 bg-radial from-amber-500/12 via-black/10 to-transparent dark:from-amber-500/10 dark:via-white/[0.02] dark:to-black/30 border-b md:border-b-0 md:border-r border-border/40 dark:border-white/10 shrink-0">
+                <div className="relative w-full h-48 sm:h-56 md:h-72 flex items-center justify-center">
                   <img
                     src={item.imageUrl}
                     alt={item.name}
-                    className="max-h-40 sm:max-h-48 w-auto object-contain drop-shadow-[0_12px_20px_rgba(0,0,0,0.2)] transition-transform duration-300"
+                    className="max-h-44 sm:max-h-52 md:max-h-68 w-auto object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.35)] transition-transform duration-300 hover:scale-105 select-none"
                   />
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Title, Revealed Price & Description */}
-              <div>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <DialogTitle className="font-display text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            {/* RIGHT COLUMN: Minimal Details & Ordering Controls */}
+            <div className="flex-1 flex flex-col min-w-0 max-h-[85vh] overflow-hidden">
+              {/* Scrollable details */}
+              <div className="flex-1 overflow-y-auto px-5 sm:px-6 pt-5 pb-4 space-y-4 scrollbar-none no-scrollbar">
+                {/* Title & Price */}
+                <div>
+                  <div className="flex items-start justify-between gap-3 pr-8">
+                    <DialogTitle className="font-display text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-snug">
                       {item.name}
                     </DialogTitle>
-                    {item.category_id && (
-                      <span className="mt-1 inline-block text-[11px] font-semibold uppercase tracking-wider text-accent">
-                        {item.category_id}
-                      </span>
-                    )}
-                  </div>
-                  <span className="font-display text-xl sm:text-2xl font-bold text-primary shrink-0">
-                    {formatBirr(item.price)}
-                  </span>
-                </div>
-
-                {item.description && (
-                  <DialogDescription className="mt-2 text-xs sm:text-sm leading-relaxed text-muted-foreground">
-                    {item.description}
-                  </DialogDescription>
-                )}
-              </div>
-
-              {/* SECTION: Choose Ingredients and Amounts */}
-              {ingredients.length > 0 && (
-                <div className="rounded-2xl border border-border/60 bg-secondary/30 p-4 sm:p-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="grid size-7 place-items-center rounded-lg bg-accent/20 text-accent">
-                        <SlidersHorizontal className="size-4" />
-                      </div>
-                      <div>
-                        <h4 className="font-sans text-sm font-semibold text-foreground">
-                          Choose Ingredients & Amount
-                        </h4>
-                        <p className="text-[11px] text-muted-foreground">
-                          Adjust each ingredient portion to your taste
-                        </p>
-                      </div>
-                    </div>
-
-                    {isCustomized && (
-                      <button
-                        type="button"
-                        onClick={resetAllIngredients}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                      >
-                        <RotateCcw className="size-3" />
-                        <span>Reset recipe</span>
-                      </button>
-                    )}
+                    <span className="font-display text-xl sm:text-2xl font-bold text-primary shrink-0">
+                      {formatBirr(item.price)}
+                    </span>
                   </div>
 
-                  {/* List of Ingredients with Amount Selectors */}
-                  <div className="space-y-3 pt-1">
-                    {ingredients.map((ing) => {
-                      const currentAmount = amounts[ing.id] ?? "regular";
-                      const config = AMOUNT_CONFIG[currentAmount];
-
-                      return (
-                        <div
-                          key={ing.id}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-xl border border-border/40 bg-card/70 p-3 transition-colors hover:border-accent/30"
-                        >
-                          <div className="min-w-0 flex items-center justify-between sm:justify-start gap-2">
-                            <span
-                              className={cn(
-                                "text-xs sm:text-sm font-medium tracking-tight text-foreground transition-all truncate",
-                                currentAmount === "none" && "line-through text-muted-foreground opacity-60"
-                              )}
-                            >
-                              {ing.name}
-                            </span>
-                            <span
-                              className={cn(
-                                "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0",
-                                currentAmount === "none" && "bg-destructive/15 text-destructive",
-                                currentAmount === "light" && "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-                                currentAmount === "regular" && "bg-secondary text-muted-foreground",
-                                currentAmount === "extra" && "bg-accent/25 text-accent-foreground dark:text-accent font-extrabold"
-                              )}
-                            >
-                              {config.label}
-                            </span>
-                          </div>
-
-                          {/* 4-Segment Amount Button Group */}
-                          <div className="grid grid-cols-4 gap-1 rounded-lg bg-secondary/60 p-1 shrink-0">
-                            {(["none", "light", "regular", "extra"] as IngredientAmount[]).map(
-                              (amtKey) => {
-                                const isSelected = currentAmount === amtKey;
-                                const optConfig = AMOUNT_CONFIG[amtKey];
-
-                                return (
-                                  <button
-                                    key={amtKey}
-                                    type="button"
-                                    onClick={() => setIngredientAmount(ing.id, amtKey)}
-                                    className={cn(
-                                      "px-2.5 py-1 text-[11px] rounded-md font-medium transition-all duration-150 cursor-pointer text-center",
-                                      isSelected
-                                        ? optConfig.activeClass
-                                        : "text-muted-foreground hover:text-foreground hover:bg-background/60"
-                                    )}
-                                    aria-label={`Set ${ing.name} amount to ${optConfig.label}`}
-                                  >
-                                    {optConfig.multiplier} {optConfig.shortLabel}
-                                  </button>
-                                );
-                              }
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Live Customization Summary Pill */}
-                  {isCustomized && (
-                    <div className="flex items-center gap-2 rounded-xl border border-accent/30 bg-accent/10 px-3.5 py-2 text-xs text-foreground">
-                      <Sparkles className="size-3.5 text-accent shrink-0 animate-pulse" />
-                      <span className="line-clamp-2">
-                        <strong className="font-semibold text-accent">Your recipe: </strong>
-                        {customizationText}
-                      </span>
-                    </div>
+                  {item.description && (
+                    <DialogDescription className="mt-1.5 text-xs sm:text-sm leading-relaxed text-muted-foreground">
+                      {item.description}
+                    </DialogDescription>
                   )}
                 </div>
-              )}
 
-              {/* Special Instructions Textarea */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Special Kitchen Instructions (Optional)
-                </label>
-                <Textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="Allergies, cooking temperature, extra crispy, etc."
-                  maxLength={200}
-                  rows={2}
-                  className="rounded-xl border-border/70 bg-card/60 text-xs sm:text-sm placeholder:text-muted-foreground/60 focus-visible:border-accent"
-                />
-              </div>
-            </div>
+                {/* SECTION: Ingredients Dropdown (Clean, minimal) */}
+                {ingredients.length > 0 && (
+                  <div className="rounded-2xl border border-border/60 bg-secondary/25 dark:bg-white/[0.03] overflow-hidden transition-all duration-200">
+                    <button
+                      type="button"
+                      onClick={() => setIsIngredientsOpen((prev) => !prev)}
+                      className="w-full flex items-center justify-between p-3 sm:p-3.5 text-left cursor-pointer transition-colors hover:bg-secondary/40 select-none group"
+                      aria-expanded={isIngredientsOpen}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="grid size-7 sm:size-8 place-items-center rounded-lg bg-accent/20 text-accent shrink-0 group-hover:scale-105 transition-transform">
+                          <SlidersHorizontal className="size-3.5 sm:size-4" />
+                        </div>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-sans text-xs sm:text-sm font-semibold text-foreground">
+                            Ingredients
+                          </span>
+                          {isCustomized ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent/20 text-accent border border-accent/35">
+                              Customized
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-muted-foreground font-normal">
+                              ({ingredients.length})
+                            </span>
+                          )}
+                        </div>
+                      </div>
 
-            {/* Sticky Action Footer: Quantity and Add to Cart */}
-            <div className="border-t border-border/60 bg-card/95 backdrop-blur-md px-5 sm:px-6 py-4 flex items-center gap-3">
-              {item.available ? (
-                <>
-                  {/* Dish Quantity Stepper */}
-                  <div className="flex items-center rounded-xl border border-border/80 bg-secondary/50 p-1">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="size-8 rounded-lg cursor-pointer"
-                      onClick={() => setQty((q) => Math.max(1, q - 1))}
-                      aria-label="Decrease quantity"
-                    >
-                      <Minus className="size-4" />
-                    </Button>
-                    <span className="w-8 text-center font-display text-sm font-semibold">
-                      {qty}
-                    </span>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="size-8 rounded-lg cursor-pointer"
-                      onClick={() => setQty((q) => Math.min(50, q + 1))}
-                      aria-label="Increase quantity"
-                    >
-                      <Plus className="size-4" />
-                    </Button>
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <div
+                          className={cn(
+                            "grid size-6 sm:size-7 place-items-center rounded-lg bg-secondary/80 text-muted-foreground transition-transform duration-200",
+                            isIngredientsOpen && "rotate-180 text-foreground bg-accent/20 text-accent"
+                          )}
+                        >
+                          <ChevronDown className="size-3.5 sm:size-4" />
+                        </div>
+                      </div>
+                    </button>
+
+                    {isIngredientsOpen && (
+                      <div className="border-t border-border/50 p-3 sm:p-3.5 space-y-2.5 bg-background/25 dark:bg-black/20 animate-in fade-in-0 duration-150">
+                        {isCustomized && (
+                          <div className="flex justify-end pb-0.5">
+                            <button
+                              type="button"
+                              onClick={resetAllIngredients}
+                              className="inline-flex items-center gap-1 text-[11px] font-medium text-accent hover:underline cursor-pointer"
+                            >
+                              <RotateCcw className="size-3" />
+                              <span>Reset</span>
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="space-y-1.5">
+                          {ingredients.map((ing) => {
+                            const currentAmount = amounts[ing.id] ?? "regular";
+
+                            return (
+                              <div
+                                key={ing.id}
+                                className="flex items-center justify-between gap-2.5 rounded-xl border border-border/40 dark:border-white/10 bg-card/70 dark:bg-white/[0.04] p-2 sm:px-3 transition-colors hover:border-accent/30"
+                              >
+                                <span
+                                  className={cn(
+                                    "text-xs sm:text-sm font-semibold tracking-tight text-foreground truncate min-w-0 flex-1",
+                                    currentAmount === "none" && "line-through text-muted-foreground/60"
+                                  )}
+                                >
+                                  {ing.name}
+                                </span>
+
+                                <Select
+                                  value={currentAmount}
+                                  onValueChange={(val) =>
+                                    setIngredientAmount(ing.id, val as IngredientAmount)
+                                  }
+                                >
+                                  <SelectTrigger
+                                    className={cn(
+                                      "h-8 w-[120px] sm:w-[135px] text-xs font-medium rounded-lg border-border/60 bg-background/80 shrink-0",
+                                      currentAmount === "none" && "border-destructive/40 text-destructive",
+                                      currentAmount === "extra" && "border-accent/50 text-accent font-semibold",
+                                      currentAmount === "light" && "border-amber-500/40 text-amber-600 dark:text-amber-400"
+                                    )}
+                                    aria-label={`Portion for ${ing.name}`}
+                                  >
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent className="z-[80] glass-modal border-border/60">
+                                    <SelectItem value="none">
+                                      <span className="text-destructive font-medium">0× None</span>
+                                    </SelectItem>
+                                    <SelectItem value="light">
+                                      <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                        ½× Light
+                                      </span>
+                                    </SelectItem>
+                                    <SelectItem value="regular">
+                                      <span className="text-foreground">1× Regular</span>
+                                    </SelectItem>
+                                    <SelectItem value="extra">
+                                      <span className="text-accent font-semibold">2× Extra</span>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
+                )}
 
-                  {/* Add to Order Button with Dynamic Quantity Pricing */}
-                  <Button
-                    className="flex-1 h-11 rounded-xl shadow-md text-sm font-semibold transition-all duration-200"
-                    size="lg"
-                    onClick={handleAddToCart}
-                  >
-                    <span>Add to Order · {formatBirr(item.price * qty)}</span>
-                  </Button>
-                </>
-              ) : (
-                <p className="w-full text-center py-2 text-sm font-medium text-destructive">
-                  This dish is currently sold out.
-                </p>
-              )}
+                {/* Special Instructions (simplified) */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Special Instructions
+                  </label>
+                  <Textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Allergies, preferences (optional)..."
+                    maxLength={200}
+                    rows={2}
+                    className="rounded-xl border-border/70 dark:border-white/10 bg-card/60 dark:bg-black/30 text-xs sm:text-sm placeholder:text-muted-foreground/60 focus-visible:border-accent resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Sticky Action Footer */}
+              <div className="border-t border-border/50 dark:border-white/10 bg-background/50 dark:bg-black/30 backdrop-blur-xl px-5 sm:px-6 py-3.5 flex items-center gap-3 shrink-0">
+                {item.available ? (
+                  <>
+                    <div className="flex items-center rounded-xl border border-border/80 dark:border-white/10 bg-secondary/50 dark:bg-black/30 p-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-8 rounded-lg cursor-pointer"
+                        onClick={() => setQty((q) => Math.max(1, q - 1))}
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus className="size-4" />
+                      </Button>
+                      <span className="w-8 text-center font-display text-sm font-semibold">
+                        {qty}
+                      </span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-8 rounded-lg cursor-pointer"
+                        onClick={() => setQty((q) => Math.min(50, q + 1))}
+                        aria-label="Increase quantity"
+                      >
+                        <Plus className="size-4" />
+                      </Button>
+                    </div>
+
+                    <Button
+                      className="flex-1 h-11 rounded-xl shadow-md text-sm font-semibold transition-all duration-200 cursor-pointer"
+                      size="lg"
+                      onClick={handleAddToCart}
+                    >
+                      <span>Add to Order · {formatBirr(item.price * qty)}</span>
+                    </Button>
+                  </>
+                ) : (
+                  <p className="w-full text-center py-2 text-sm font-medium text-destructive">
+                    This dish is currently sold out.
+                  </p>
+                )}
+              </div>
             </div>
           </>
         )}

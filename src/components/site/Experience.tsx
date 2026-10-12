@@ -382,11 +382,356 @@ function getShortestAngleDelta(fromAngle: number, toAngle: number): number {
   return diff;
 }
 
+/* Dynamic food-matching floating elements that morph based on the active dish */
+const BOTANICALS = Array.from({ length: 24 }, (_, i) => ({
+  left: (i * 37) % 100,
+  top: (i * 53) % 100,
+  size: 26 + ((i * 7) % 22),
+  dur: 9 + ((i * 5) % 10),
+  delay: -((i * 3) % 12),
+  rot: (i * 47) % 360,
+  variant: i % 4,
+}));
+
+function FoodParticle({ theme, variant }: { theme: string; variant: number }) {
+  switch (theme) {
+    case "pizza": {
+      // 0: Spicy Pepperoni Slice, 1: Fresh Basil Leaf, 2: Black Olive Ring, 3: Chili Pepper Flake
+      if (variant === 0) {
+        return (
+          <g>
+            <circle cx="16" cy="16" r="13" fill="#dc2626" opacity="0.95" />
+            <circle cx="16" cy="16" r="11" fill="#b91c1c" />
+            <circle cx="12" cy="11" r="1.3" fill="#7f1d1d" />
+            <circle cx="20" cy="13" r="1.5" fill="#fca5a5" opacity="0.7" />
+            <circle cx="14" cy="20" r="1.2" fill="#7f1d1d" />
+            <circle cx="18" cy="18" r="1" fill="#fca5a5" opacity="0.6" />
+          </g>
+        );
+      }
+      if (variant === 1) {
+        return (
+          <g>
+            <path d="M16 3 C25 9, 27 23, 16 29 C5 23, 7 9, 16 3 Z" fill="#22c55e" opacity="0.95" />
+            <path d="M16 5 L16 27" stroke="#15803d" strokeWidth="1.2" fill="none" />
+            <path d="M16 11 Q21 14 24 15 M16 18 Q20 20 23 23 M16 11 Q11 14 8 15 M16 18 Q12 20 9 23" stroke="#15803d" strokeWidth="0.8" fill="none" opacity="0.6" />
+          </g>
+        );
+      }
+      if (variant === 2) {
+        return (
+          <g>
+            <path
+              d="M16 4 C22.6 4 28 9.4 28 16 C28 22.6 22.6 28 16 28 C9.4 28 4 22.6 4 16 C4 9.4 9.4 4 16 4 Z M16 11 C13.2 11 11 13.2 11 16 C11 18.8 13.2 21 16 21 C18.8 21 21 18.8 21 16 C21 13.2 18.8 11 16 11 Z"
+              fill="#292524"
+              opacity="0.9"
+            />
+            <circle cx="16" cy="16" r="11" stroke="#44403c" strokeWidth="1" fill="none" opacity="0.6" />
+          </g>
+        );
+      }
+      return (
+        <g>
+          <path d="M9 8 C15 6, 24 11, 23 20 C20 25, 12 25, 9 21 C6 17, 6 11, 9 8 Z" fill="#ef4444" opacity="0.95" />
+          <circle cx="15" cy="17" r="2.2" fill="#fef08a" opacity="0.9" />
+          <circle cx="15" cy="17" r="1.2" fill="#ca8a04" />
+        </g>
+      );
+    }
+
+    case "burger": {
+      if (variant === 0) {
+        return (
+          <g>
+            <ellipse cx="12" cy="14" rx="4" ry="7" fill="#fef08a" opacity="0.95" transform="rotate(-20 12 14)" />
+            <ellipse cx="20" cy="18" rx="3.5" ry="6.5" fill="#fde047" opacity="0.95" transform="rotate(30 20 18)" />
+          </g>
+        );
+      }
+      if (variant === 1) {
+        return (
+          <g>
+            <circle cx="16" cy="16" r="12" fill="#4ade80" stroke="#15803d" strokeWidth="1.8" opacity="0.9" />
+            <circle cx="16" cy="16" r="7" fill="#86efac" opacity="0.7" />
+            <circle cx="16" cy="16" r="2.5" fill="#166534" opacity="0.5" />
+          </g>
+        );
+      }
+      if (variant === 2) {
+        return (
+          <g>
+            <path d="M7 11 Q18 6 25 15 Q17 24 8 18 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="1" opacity="0.95" />
+            <path d="M11 13 Q16 10 21 16" stroke="#b45309" strokeWidth="0.8" fill="none" opacity="0.6" />
+          </g>
+        );
+      }
+      return (
+        <g>
+          <path d="M16 3 C24 8, 26 21, 17 29 C7 23, 9 9, 16 3 Z" fill="#22c55e" opacity="0.95" />
+          <path d="M16 5 L16 27" stroke="#15803d" strokeWidth="1.2" fill="none" />
+        </g>
+      );
+    }
+
+    case "brioche": {
+      if (variant === 0) {
+        return (
+          <g>
+            <path d="M8 12 C14 5, 25 8, 24 18 C23 25, 12 25, 8 18 C6 14, 6 13, 8 12 Z" fill="#fef08a" stroke="#ca8a04" strokeWidth="1.2" opacity="0.95" />
+            <path d="M12 12 Q18 9 20 18" stroke="#eab308" strokeWidth="1" fill="none" opacity="0.8" />
+          </g>
+        );
+      }
+      if (variant === 1) {
+        return (
+          <g>
+            <polygon points="16,5 26,11 16,17 6,11" fill="#fde047" opacity="0.95" />
+            <polygon points="6,11 16,17 16,27 6,21" fill="#ca8a04" opacity="0.9" />
+            <polygon points="26,11 16,17 16,27 26,21" fill="#b45309" opacity="0.95" />
+          </g>
+        );
+      }
+      if (variant === 2) {
+        return (
+          <g>
+            <path d="M16 4 C23 12, 24 22, 16 28 C8 22, 9 12, 16 4 Z" fill="#f59e0b" opacity="0.95" />
+            <ellipse cx="14" cy="20" rx="3" ry="4" fill="#fbbf24" opacity="0.85" />
+            <circle cx="13" cy="18" r="1.2" fill="#ffffff" opacity="0.7" />
+          </g>
+        );
+      }
+      return (
+        <g>
+          <path d="M16 3 L16 29" stroke="#b45309" strokeWidth="1.6" strokeLinecap="round" />
+          <ellipse cx="12" cy="10" rx="2.5" ry="5" fill="#fde047" transform="rotate(-35 12 10)" />
+          <ellipse cx="20" cy="10" rx="2.5" ry="5" fill="#fde047" transform="rotate(35 20 10)" />
+          <ellipse cx="12" cy="18" rx="2.5" ry="5" fill="#fde047" transform="rotate(-35 12 18)" />
+          <ellipse cx="20" cy="18" rx="2.5" ry="5" fill="#fde047" transform="rotate(35 20 18)" />
+        </g>
+      );
+    }
+
+    case "coffee": {
+      if (variant === 0) {
+        return (
+          <g>
+            <ellipse cx="16" cy="16" rx="9" ry="14" fill="#3b1706" opacity="0.95" />
+            <ellipse cx="16" cy="16" rx="7.8" ry="12.5" fill="#5c2608" opacity="0.9" />
+            <path d="M16 4 Q12.5 12 18 16 Q12.5 20 16 28" stroke="#1f0a02" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+            <path d="M11 9 Q8 16 11 23" stroke="#d97706" strokeWidth="0.8" opacity="0.4" fill="none" />
+          </g>
+        );
+      }
+      if (variant === 1) {
+        return (
+          <g>
+            <ellipse cx="16" cy="16" rx="14" ry="9" fill="#2d1204" opacity="0.95" />
+            <ellipse cx="16" cy="16" rx="12.5" ry="7.8" fill="#4d1d05" opacity="0.9" />
+            <path d="M4 16 Q12 12.5 16 18 Q20 12.5 28 16" stroke="#170601" strokeWidth="2" strokeLinecap="round" fill="none" />
+            <path d="M9 11 Q16 8 23 11" stroke="#f59e0b" strokeWidth="0.8" opacity="0.35" fill="none" />
+          </g>
+        );
+      }
+      if (variant === 2) {
+        return (
+          <g>
+            <path d="M16 4 L18.5 11.5 L26 12 L20.5 17 L22 25 L16 20.5 L10 25 L11.5 17 L6 12 L13.5 11.5 Z" fill="#78350f" opacity="0.9" />
+            <circle cx="16" cy="16" r="3.2" fill="#451a03" />
+            <circle cx="16" cy="16" r="1.5" fill="#fde047" opacity="0.6" />
+          </g>
+        );
+      }
+      return (
+        <g>
+          <path d="M16 5 C22 13, 23 22, 16 27 C9 22, 10 13, 16 5 Z" fill="#d97706" opacity="0.9" />
+          <ellipse cx="16" cy="19" rx="3.5" ry="4.5" fill="#f59e0b" opacity="0.8" />
+          <circle cx="14" cy="16" r="1.2" fill="#ffffff" opacity="0.6" />
+        </g>
+      );
+    }
+
+    case "iced-coffee": {
+      if (variant === 0) {
+        return (
+          <g>
+            <ellipse cx="16" cy="16" rx="9" ry="14" fill="#3b1706" opacity="0.95" />
+            <ellipse cx="16" cy="16" rx="7.5" ry="12" fill="#5c2608" opacity="0.9" />
+            <path d="M16 4 Q12.5 12 18 16 Q12.5 20 16 28" stroke="#1f0a02" strokeWidth="2" strokeLinecap="round" fill="none" />
+          </g>
+        );
+      }
+      if (variant === 1) {
+        return (
+          <g>
+            <polygon points="16,4 26,10 16,16 6,10" fill="#e0f2fe" opacity="0.9" />
+            <polygon points="6,10 16,16 16,28 6,22" fill="#bae6fd" opacity="0.75" />
+            <polygon points="26,10 16,16 16,28 26,22" fill="#7dd3fc" opacity="0.85" />
+            <path d="M16 16 L16 28 M16 16 L26 10 M16 16 L6 10" stroke="#ffffff" strokeWidth="1.2" opacity="0.9" />
+          </g>
+        );
+      }
+      if (variant === 2) {
+        return (
+          <g>
+            <path d="M16 4 C24 10, 24 22, 16 28 C10 24, 8 16, 16 4 Z" fill="#b45309" opacity="0.9" />
+            <path d="M14 9 Q19 16 15 23" stroke="#fcd34d" strokeWidth="1.8" strokeLinecap="round" fill="none" opacity="0.85" />
+          </g>
+        );
+      }
+      return (
+        <g>
+          <ellipse cx="16" cy="16" rx="13" ry="8.5" fill="#2d1204" opacity="0.95" />
+          <path d="M4 16 Q12 12.5 16 18 Q20 12.5 28 16" stroke="#170601" strokeWidth="2" strokeLinecap="round" fill="none" />
+        </g>
+      );
+    }
+
+    case "salmon": {
+      if (variant === 0) {
+        return (
+          <g>
+            <circle cx="16" cy="16" r="13" fill="#facc15" opacity="0.9" />
+            <circle cx="16" cy="16" r="11" fill="#fef08a" />
+            <circle cx="16" cy="16" r="2" fill="#ca8a04" />
+            <path d="M16 6 L16 14 M16 18 L16 26 M6 16 L14 16 M18 16 L26 16 M9 9 L14 14 M18 18 L23 23 M9 23 L14 18 M18 14 L23 9" stroke="#eab308" strokeWidth="1" opacity="0.8" />
+          </g>
+        );
+      }
+      if (variant === 1) {
+        return (
+          <g>
+            <path d="M5 27 Q14 17 25 5" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" fill="none" />
+            <path d="M10 21 Q16 20 19 14 M14 16 Q19 12 22 9 M8 23 Q12 19 16 17 M17 12 Q20 8 23 7" stroke="#4ade80" strokeWidth="1.3" strokeLinecap="round" fill="none" />
+          </g>
+        );
+      }
+      if (variant === 2) {
+        return (
+          <g>
+            <circle cx="16" cy="16" r="9" fill="#fb7185" opacity="0.95" />
+            <circle cx="13" cy="13" r="2.8" fill="#fecdd3" opacity="0.8" />
+            <circle cx="16" cy="16" r="7" stroke="#e11d48" strokeWidth="0.8" fill="none" opacity="0.4" />
+          </g>
+        );
+      }
+      return (
+        <g>
+          <path d="M16 2 C21 8, 22 22, 16 30 C10 22, 11 8, 16 2 Z" fill="#16a34a" opacity="0.9" />
+          <path d="M16 4 L16 28" stroke="#15803d" strokeWidth="1.2" fill="none" />
+        </g>
+      );
+    }
+
+    case "steak": {
+      if (variant === 0) {
+        return (
+          <g>
+            <path d="M16 3 L16 29" stroke="#15803d" strokeWidth="1.6" strokeLinecap="round" />
+            <path d="M16 7 L24 4 M16 7 L8 4 M16 13 L25 9 M16 13 L7 9 M16 19 L24 15 M16 19 L8 15 M16 24 L23 21 M16 24 L9 21" stroke="#22c55e" strokeWidth="1.4" strokeLinecap="round" />
+          </g>
+        );
+      }
+      if (variant === 1) {
+        return (
+          <g>
+            <circle cx="16" cy="16" r="9" fill="#18181b" stroke="#3f3f46" strokeWidth="1.2" />
+            <circle cx="13" cy="13" r="1.8" fill="#71717a" opacity="0.8" />
+            <circle cx="19" cy="19" r="1.4" fill="#52525b" opacity="0.7" />
+          </g>
+        );
+      }
+      if (variant === 2) {
+        return (
+          <g>
+            <path d="M10 6 C19 4, 26 12, 23 22 C21 27, 12 28, 8 23 C5 18, 5 10, 10 6 Z" fill="#fef9c3" stroke="#fde047" strokeWidth="1.2" opacity="0.95" />
+            <path d="M12 11 Q16 18 15 23" stroke="#facc15" strokeWidth="0.8" fill="none" opacity="0.6" />
+          </g>
+        );
+      }
+      return (
+        <g>
+          <path d="M16 4 C23 13, 24 22, 16 27 C8 22, 9 13, 16 4 Z" fill="#881337" opacity="0.95" />
+          <circle cx="14" cy="19" r="2.8" fill="#f43f5e" opacity="0.75" />
+        </g>
+      );
+    }
+
+    case "pasta": {
+      if (variant === 0) {
+        return (
+          <g>
+            <path d="M6 6 Q14 14 10 20 Q6 26 18 28" stroke="#facc15" strokeWidth="3.2" strokeLinecap="round" fill="none" opacity="0.95" />
+            <path d="M8 7 Q15 14 11 20" stroke="#fef08a" strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.7" />
+          </g>
+        );
+      }
+      if (variant === 1) {
+        return (
+          <g>
+            <path d="M7 10 Q19 5 26 15 Q18 25 8 18 Z" fill="#fef08a" stroke="#ca8a04" strokeWidth="0.8" opacity="0.9" />
+            <path d="M11 13 Q17 10 22 16" stroke="#ca8a04" strokeWidth="0.6" fill="none" opacity="0.5" />
+          </g>
+        );
+      }
+      if (variant === 2) {
+        return (
+          <g>
+            <path d="M16 3 C25 9, 27 23, 16 29 C5 23, 7 9, 16 3 Z" fill="#22c55e" opacity="0.95" />
+            <path d="M16 4 L16 28" stroke="#15803d" strokeWidth="1" fill="none" />
+          </g>
+        );
+      }
+      return (
+        <g>
+          <circle cx="16" cy="16" r="10" fill="#ef4444" opacity="0.95" />
+          <circle cx="13" cy="12" r="2.6" fill="#fca5a5" opacity="0.7" />
+          <path d="M16 6 L13 3 M16 6 L19 3 M16 6 L16 2" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" />
+        </g>
+      );
+    }
+
+    case "salad":
+    default: {
+      if (variant === 0) {
+        return (
+          <g>
+            <path d="M16 2 C22 6, 24 14, 21 18 C24 21, 23 27, 16 30 C9 27, 8 21, 11 18 C8 14, 10 6, 16 2 Z" fill="#22c55e" opacity="0.9" />
+            <path d="M16 4 L16 28" stroke="#16a34a" strokeWidth="1.2" fill="none" />
+          </g>
+        );
+      }
+      if (variant === 1) {
+        return (
+          <g>
+            <circle cx="16" cy="16" r="12" fill="#86efac" opacity="0.8" stroke="#22c55e" strokeWidth="1.6" />
+            <circle cx="16" cy="16" r="6" fill="#dcfce7" opacity="0.7" />
+            <circle cx="16" cy="16" r="2" fill="#15803d" opacity="0.4" />
+          </g>
+        );
+      }
+      if (variant === 2) {
+        return (
+          <g>
+            <path d="M16 4 C22 9, 23 21, 16 28 C9 21, 10 9, 16 4 Z" fill="#4ade80" opacity="0.9" />
+            <path d="M16 5 L16 26" stroke="#16a34a" strokeWidth="1" fill="none" opacity="0.7" />
+          </g>
+        );
+      }
+      return (
+        <g>
+          <circle cx="16" cy="16" r="9.5" fill="#f87171" opacity="0.95" />
+          <circle cx="13" cy="12" r="2.2" fill="#fee2e2" opacity="0.8" />
+          <path d="M16 6 L14 3 M16 6 L18 3" stroke="#22c55e" strokeWidth="1.4" strokeLinecap="round" />
+        </g>
+      );
+    }
+  }
+}
+
 export function CulinaryClock({ hours }: { hours: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const dialRef = useRef<HTMLDivElement>(null);
   const handRef = useRef<HTMLDivElement>(null);
-  const cart = useCart();
 
   // Kinetic physics refs for 60/120fps fluid motion without CSS transition jitter
   const targetAngleRef = useRef(0);
@@ -404,18 +749,22 @@ export function CulinaryClock({ hours }: { hours: string }) {
   const [displayAngle, setDisplayAngle] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [speedMultiplier, setSpeedMultiplier] = useState<1 | 2>(1);
-  const [addedItem, setAddedItem] = useState<string | null>(null);
   const [mouseParallax, setMouseParallax] = useState({ x: 0, y: 0 });
-  const [isMobile, setIsMobile] = useState(false);
+  const [screenSize, setScreenSize] = useState<"mobile" | "tablet" | "desktop">("desktop");
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 640);
+    const check = () => {
+      const w = window.innerWidth;
+      if (w < 640) setScreenSize("mobile");
+      else if (w < 1024) setScreenSize("tablet");
+      else setScreenSize("desktop");
+    };
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // All 11 Signature Dishes positioned outside the clock dial
+  // All 11 Signature Dishes positioned outside the clock dial with vibrant, authentic food color palettes
   const clockDishes = useMemo(
     () => [
       {
@@ -425,6 +774,10 @@ export function CulinaryClock({ hours }: { hours: string }) {
         title: "Gourmet Burger",
         angle: 0,
         tag: "Prime Beef",
+        theme: "burger",
+        boardColor: "#b45309",
+        glowColor: "rgba(253, 224, 71, 0.45)",
+        accentColor: "#fef08a",
       },
       {
         food: SIGNATURE_FOODS.find((f) => f.id === "f1111111-1111-4111-a111-111111111111") ?? SIGNATURE_FOODS[0]!,
@@ -433,6 +786,10 @@ export function CulinaryClock({ hours }: { hours: string }) {
         title: "Wood-Fired Diavola",
         angle: 33,
         tag: "Neapolitan Pizza",
+        theme: "pizza",
+        boardColor: "#b91c1c",
+        glowColor: "rgba(254, 202, 202, 0.45)",
+        accentColor: "#fee2e2",
       },
       {
         food: SIGNATURE_FOODS.find((f) => f.id === "f7777777-7777-4777-a777-777777777777") ?? SIGNATURE_FOODS[6]!,
@@ -441,6 +798,10 @@ export function CulinaryClock({ hours }: { hours: string }) {
         title: "Pan-Seared Nile Perch",
         angle: 65,
         tag: "Fresh Catch",
+        theme: "salmon",
+        boardColor: "#0284c7",
+        glowColor: "rgba(186, 230, 253, 0.45)",
+        accentColor: "#e0f2fe",
       },
       {
         food: SIGNATURE_FOODS.find((f) => f.id === "f2222222-2222-4222-a222-222222222222") ?? SIGNATURE_FOODS[1]!,
@@ -449,6 +810,10 @@ export function CulinaryClock({ hours }: { hours: string }) {
         title: "Triple-Decker Club",
         angle: 98,
         tag: "Bistro Sandwich",
+        theme: "burger",
+        boardColor: "#ca8a04",
+        glowColor: "rgba(254, 240, 138, 0.45)",
+        accentColor: "#fef9c3",
       },
       {
         food: SIGNATURE_FOODS.find((f) => f.id === "fbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb") ?? SIGNATURE_FOODS[10]!,
@@ -457,6 +822,10 @@ export function CulinaryClock({ hours }: { hours: string }) {
         title: "Artisan Pizza Slice",
         angle: 131,
         tag: "Wood-Fired Slice",
+        theme: "pizza",
+        boardColor: "#c2410c",
+        glowColor: "rgba(254, 215, 170, 0.45)",
+        accentColor: "#ffedd5",
       },
       {
         food: SIGNATURE_FOODS.find((f) => f.id === "faaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa") ?? SIGNATURE_FOODS[9]!,
@@ -465,6 +834,10 @@ export function CulinaryClock({ hours }: { hours: string }) {
         title: "Salmon & Mozzarella Pizza",
         angle: 164,
         tag: "Gourmet White Base",
+        theme: "pizza",
+        boardColor: "#c85a2b",
+        glowColor: "rgba(254, 215, 170, 0.45)",
+        accentColor: "#fed7aa",
       },
       {
         food: SIGNATURE_FOODS.find((f) => f.id === "f4444444-4444-4444-a444-444444444444") ?? SIGNATURE_FOODS[3]!,
@@ -473,6 +846,10 @@ export function CulinaryClock({ hours }: { hours: string }) {
         title: "Prime Filet Mignon",
         angle: 196,
         tag: "French Haute Cuisine",
+        theme: "steak",
+        boardColor: "#9f1239",
+        glowColor: "rgba(254, 205, 211, 0.45)",
+        accentColor: "#ffe4e6",
       },
       {
         food: SIGNATURE_FOODS.find((f) => f.id === "f6666666-6666-4666-a666-666666666666") ?? SIGNATURE_FOODS[5]!,
@@ -481,6 +858,10 @@ export function CulinaryClock({ hours }: { hours: string }) {
         title: "Creamy Salmon Fettuccine",
         angle: 229,
         tag: "Artisan Ribbon Pasta",
+        theme: "pasta",
+        boardColor: "#b87e14",
+        glowColor: "rgba(254, 240, 138, 0.45)",
+        accentColor: "#fef9c3",
       },
       {
         food: SIGNATURE_FOODS.find((f) => f.id === "f5555555-5555-4555-a555-555555555555") ?? SIGNATURE_FOODS[4]!,
@@ -489,6 +870,10 @@ export function CulinaryClock({ hours }: { hours: string }) {
         title: "Pan-Seared Grilled Salmon",
         angle: 262,
         tag: "Nordic Coastal",
+        theme: "salmon",
+        boardColor: "#be185d",
+        glowColor: "rgba(251, 207, 232, 0.45)",
+        accentColor: "#fce7f3",
       },
       {
         food: SIGNATURE_FOODS.find((f) => f.id === "f3333333-3333-4333-a333-333333333333") ?? SIGNATURE_FOODS[2]!,
@@ -497,6 +882,10 @@ export function CulinaryClock({ hours }: { hours: string }) {
         title: "Golden Brioche Toast",
         angle: 295,
         tag: "Normandy Butter Delice",
+        theme: "brioche",
+        boardColor: "#c47a16",
+        glowColor: "rgba(254, 240, 138, 0.45)",
+        accentColor: "#fef9c3",
       },
       {
         food: SIGNATURE_FOODS.find((f) => f.id === "f9999999-9999-4999-a999-499999999999") ?? SIGNATURE_FOODS[8]!,
@@ -505,6 +894,10 @@ export function CulinaryClock({ hours }: { hours: string }) {
         title: "Garden Salad Bowl",
         angle: 327,
         tag: "Crisp Organic Greens",
+        theme: "salad",
+        boardColor: "#227b40",
+        glowColor: "rgba(187, 247, 208, 0.45)",
+        accentColor: "#dcfce7",
       },
     ],
     []
@@ -809,26 +1202,17 @@ export function CulinaryClock({ hours }: { hours: string }) {
     }
   };
 
-  const handleAddToCart = (dishFood: SignatureFood) => {
-    cart.add({
-      itemId: dishFood.id,
-      name: dishFood.name,
-      price: dishFood.price,
-      quantity: 1,
-      imageUrl: dishFood.image,
-    });
-    setAddedItem(dishFood.id);
-    toast.success(`Added ${dishFood.name} to cart!`);
-    setTimeout(() => setAddedItem(null), 2000);
-  };
-
-  const orbitRadius = isMobile ? 150 : 210;
+  const orbitRadius =
+    screenSize === "mobile" ? 160 : screenSize === "tablet" ? 245 : 330;
 
   return (
     <section
       ref={ref}
       id="culinary-clock"
-      className="relative min-h-screen py-12 sm:py-16 bg-gradient-to-b from-background via-secondary/25 to-background flex flex-col items-center justify-center overflow-hidden select-none"
+      className="relative min-h-screen py-8 sm:py-12 text-white flex flex-col items-center justify-center overflow-hidden select-none transition-colors duration-1000 ease-in-out"
+      style={{
+        backgroundColor: activeDish.boardColor,
+      }}
       onPointerMove={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
         const nx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
@@ -836,299 +1220,225 @@ export function CulinaryClock({ hours }: { hours: string }) {
         setMouseParallax({ x: Math.max(-1, Math.min(1, nx)), y: Math.max(-1, Math.min(1, ny)) });
       }}
     >
-      {/* Ambient chromatic light refractions */}
-      <div className="pointer-events-none absolute left-1/4 top-1/3 -z-10 size-[32rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/15 blur-[140px] animate-pulse" />
-      <div className="pointer-events-none absolute right-1/4 bottom-1/4 -z-10 size-[28rem] rounded-full bg-primary/10 blur-[150px]" />
-      <div className="pointer-events-none absolute left-1/2 bottom-1/3 -z-10 size-[26rem] rounded-full bg-amber-500/10 blur-[130px]" />
+      {/* Ambient chromatic light halo morphing with the active food */}
+      <div
+        className="pointer-events-none absolute inset-0 blur-[150px] opacity-75 transition-all duration-1000 ease-out -z-10"
+        style={{
+          background: `radial-gradient(circle at calc(50% + ${Math.sin((activeDish.angle * Math.PI) / 180) * orbitRadius * 0.75}px) calc(50% + ${-Math.cos((activeDish.angle * Math.PI) / 180) * orbitRadius * 0.75}px), ${activeDish.glowColor}, transparent 65%)`,
+        }}
+      />
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-[650px] rounded-full blur-[160px] opacity-35 transition-all duration-1000 ease-out -z-10"
+        style={{
+          backgroundColor: activeDish.glowColor,
+        }}
+      />
 
-      <div className="relative w-full flex flex-col items-center justify-center gap-3 sm:gap-5 px-4 sm:px-6">
+      {/* Floating dynamic food symbols moving in the background */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+        style={{
+          transform: `translate(${mouseParallax.x * -25}px, ${mouseParallax.y * -25}px)`,
+        }}
+      >
+        {BOTANICALS.map((b, i) => (
+          <svg
+            key={i}
+            viewBox="0 0 32 32"
+            className="exp-leaf absolute transition-all duration-700 pointer-events-none drop-shadow-md"
+            style={{
+              left: `${b.left}%`,
+              top: `${b.top}%`,
+              width: b.size,
+              height: b.size,
+              animationDuration: `${b.dur}s`,
+              animationDelay: `${b.delay}s`,
+              opacity: 0.82,
+              ["--r" as string]: `${b.rot}deg`,
+            }}
+          >
+            <FoodParticle theme={activeDish.theme} variant={b.variant} />
+          </svg>
+        ))}
+      </div>
+
+      <div className="relative w-full flex flex-col items-center justify-center gap-2 sm:gap-4 px-4 sm:px-6">
         {/* Modern Light Switch */}
         <div className="absolute top-0 right-3 sm:right-6 md:right-10 lg:right-14 z-30 pointer-events-auto">
           <ModernLightSwitch />
         </div>
 
-        <div className="text-center max-w-2xl">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/15 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-accent backdrop-blur-sm">
-            <Clock className="size-3.5" />
-            <span>The Culinary Timepiece</span>
-          </div>
-          <h2 className="mt-1 font-display text-2xl sm:text-3xl lg:text-4xl font-medium tracking-tight text-foreground">
-            Flavors that turn with the clock
-          </h2>
-          <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
-            Rotate through our daily culinary hours — revealing each dish at its golden hour.
-          </p>
-        </div>
-
-        {/* 3D Clock Stage: Analog Clock in Center, Food OUTSIDE in Orbit */}
-        <div className="grid w-full max-w-[1400px] items-center gap-6 lg:gap-8 lg:grid-cols-[1.38fr_1fr]">
+        {/* 3D Clock Stage: Giant Modern Simplified Timepiece with Orbiting Dishes */}
+        <div
+          className="perspective-1000 relative mx-auto flex items-center justify-center select-none my-2 sm:my-4"
+          style={{
+            width: "min(98vw, 1100px)",
+            height: screenSize === "mobile" ? "450px" : screenSize === "tablet" ? "620px" : "800px",
+          }}
+        >
           <div
-            className="perspective-1000 relative mx-auto flex items-center justify-center select-none"
+            className="preserve-3d relative size-full flex items-center justify-center transition-transform duration-150 ease-out"
             style={{
-              width: "min(96vw, 660px)",
-              height: isMobile ? "370px" : "490px",
+              transform: `rotateX(${-mouseParallax.y * 6}deg) rotateY(${mouseParallax.x * 6}deg)`,
             }}
           >
+            {/* THE ANALOG CLOCK (Center, Liquid Glass Dial, Simplified & Modern) */}
             <div
-              className="preserve-3d relative size-full flex items-center justify-center transition-transform duration-150 ease-out"
-              style={{
-                transform: `rotateX(${-mouseParallax.y * 6}deg) rotateY(${mouseParallax.x * 6}deg)`,
-              }}
+              ref={dialRef}
+              onPointerDown={handleDialPointerDown}
+              onPointerMove={handleDialPointerMove}
+              onPointerUp={handleDialPointerUp}
+              onPointerCancel={handleDialPointerUp}
+              className="relative size-44 sm:size-56 md:size-64 lg:size-72 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-[0_25px_60px_rgba(0,0,0,0.6)] border border-white/10 bg-black/30 backdrop-blur-2xl transition-all duration-700"
             >
-              {/* THE ANALOG CLOCK (Center, Liquid Glass Dial, Drag-interactive) */}
-              <div
-                ref={dialRef}
-                onPointerDown={handleDialPointerDown}
-                onPointerMove={handleDialPointerMove}
-                onPointerUp={handleDialPointerUp}
-                onPointerCancel={handleDialPointerUp}
-                className="liquid-glass-dial relative size-44 sm:size-56 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-xl"
-              >
-                <div className="absolute inset-2 sm:inset-2.5 rounded-full border border-foreground/15 dark:border-white/20 pointer-events-none" />
+              {/* Subtle inner concentric ring */}
+              <div className="absolute inset-3 sm:inset-4 rounded-full border border-white/5 pointer-events-none" />
 
-                {/* 12 Hour Ticks */}
-                {Array.from({ length: 12 }, (_, i) => (
-                  <div key={i} className="absolute inset-0 pointer-events-none" style={{ transform: `rotate(${i * 30}deg)` }}>
+              {/* 12 Simplified Modern Hour Tick Markers (Clean, minimal, luxury timepiece) */}
+              {Array.from({ length: 12 }, (_, i) => (
+                <div key={i} className="absolute inset-0 pointer-events-none" style={{ transform: `rotate(${i * 30}deg)` }}>
+                  <span
+                    className={`absolute left-1/2 top-2.5 -translate-x-1/2 rounded-full transition-colors duration-500 ${
+                      i % 3 === 0
+                        ? "h-3.5 w-1 bg-white/70 shadow-xs"
+                        : "h-2 w-0.5 bg-white/20"
+                    }`}
+                  />
+                  {/* Clean minimal numerals at 12, 3, 6, 9 */}
+                  {i % 3 === 0 && (
                     <span
-                      className={`absolute left-1/2 top-2 -translate-x-1/2 rounded-full ${
-                        i % 3 === 0 ? "h-4 w-1.5 bg-primary/80" : "h-2.5 w-0.5 bg-primary/35"
-                      }`}
-                    />
-                    {i % 3 === 0 && (
-                      <span
-                        className="absolute left-1/2 top-6 -translate-x-1/2 font-display text-xs sm:text-sm font-semibold text-primary/70"
-                        style={{ transform: `rotate(${-i * 30}deg)` }}
-                      >
-                        {i === 0 ? "12" : i}
-                      </span>
-                    )}
-                  </div>
-                ))}
-
-                {/* 60 Minute Dots */}
-                {Array.from({ length: 60 }, (_, i) => (
-                  <div key={`m-${i}`} className="absolute inset-0 pointer-events-none" style={{ transform: `rotate(${i * 6}deg)` }}>
-                    <span className="absolute left-1/2 top-1 size-1 -translate-x-1/2 rounded-full bg-primary/20" />
-                  </div>
-                ))}
-
-                {/* Polished Center Bearing Jewel (No text overlap!) */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-3.5 sm:size-4 rounded-full border-2 border-background bg-accent shadow-[0_0_12px_rgba(202,138,4,0.7)] z-20 pointer-events-none" />
-
-                {/* Clock Face Display: Live Digital Time & Service below center bearing */}
-                <div className="z-10 flex flex-col items-center text-center px-2 pointer-events-none mt-10 sm:mt-12">
-                  <span className="font-mono text-xs sm:text-sm font-bold tracking-tight text-foreground bg-background/70 dark:bg-card/75 px-2.5 py-0.5 rounded-full border border-border/40 shadow-xs backdrop-blur-md">
-                    {activeDish.label}
-                  </span>
-                  <p className="mt-1 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-accent truncate max-w-[110px] sm:max-w-[130px]">
-                    {activeDish.title}
-                  </p>
+                      className="absolute left-1/2 top-6 -translate-x-1/2 font-display text-xs sm:text-sm font-medium text-white/50 tracking-wider"
+                      style={{ transform: `rotate(${-i * 30}deg)` }}
+                    >
+                      {i === 0 ? "12" : i}
+                    </span>
+                  )}
                 </div>
+              ))}
 
-                {/* THE ROTATING ANALOG LINE — EXTENDS OUTSIDE THE CLOCK DIRECTLY TO THE ACTIVE DISH */}
+              {/* Minimal Center Jewel Bearing with dynamic active accent */}
+              <div
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-4 sm:size-5 rounded-full border-2 border-black/40 shadow-lg z-20 pointer-events-none transition-colors duration-700"
+                style={{
+                  backgroundColor: activeDish.accentColor,
+                  boxShadow: `0 0 16px ${activeDish.accentColor}`,
+                }}
+              />
+
+              {/* THE ROTATING ANALOG HAND / POINTER EXTENDING DIRECTLY TO ACTIVE DISH */}
+              <div
+                ref={handRef}
+                className="absolute inset-0 pointer-events-none will-change-transform"
+                style={{
+                  transform: `rotate(${displayAngle}deg)`,
+                }}
+              >
                 <div
-                  ref={handRef}
-                  className="absolute inset-0 pointer-events-none will-change-transform"
+                  className="absolute bottom-1/2 left-1/2 -translate-x-1/2 origin-bottom rounded-full transition-colors duration-700"
                   style={{
-                    transform: `rotate(${displayAngle}deg)`,
+                    height: `${orbitRadius}px`,
+                    width: "2.5px",
+                    background: `linear-gradient(to top, transparent 10%, ${activeDish.accentColor} 60%, ${activeDish.accentColor} 100%)`,
+                    boxShadow: `0 0 16px ${activeDish.accentColor}`,
                   }}
                 >
                   <div
-                    className="absolute bottom-1/2 left-1/2 -translate-x-1/2 origin-bottom rounded-full"
+                    className="absolute -top-2 left-1/2 size-4 -translate-x-1/2 rounded-full ring-4 ring-white/20 transition-colors duration-700"
                     style={{
-                      height: `${orbitRadius}px`,
-                      width: "3px",
-                      background: "linear-gradient(to top, var(--color-primary) 15%, var(--color-accent) 70%, var(--color-accent) 100%)",
-                      boxShadow: "0 0 16px var(--color-accent)",
+                      backgroundColor: activeDish.accentColor,
+                      boxShadow: `0 0 16px ${activeDish.accentColor}`,
                     }}
-                  >
-                    <div className="absolute -top-2 left-1/2 size-4 -translate-x-1/2 rounded-full bg-accent shadow-[0_0_18px_var(--color-accent)] ring-4 ring-accent/25" />
-                  </div>
+                  />
                 </div>
               </div>
+            </div>
 
-              {/* ALL 11 FOOD ITEMS IN ORBIT WITH BUTTERY SPRING TRANSITION */}
-              {clockDishes.map((item, idx) => {
-                const isActive = idx === activeDishIndex;
-                const rad = (item.angle * Math.PI) / 180;
-                const posX = Math.sin(rad) * orbitRadius;
-                const posY = -Math.cos(rad) * orbitRadius;
+            {/* ALL 11 FOOD ITEMS IN ORBIT — PURE, BIG, MOUTHWATERING, ZERO TEXT CLUTTER */}
+            {clockDishes.map((item, idx) => {
+              const isActive = idx === activeDishIndex;
+              const rad = (item.angle * Math.PI) / 180;
+              const posX = Math.sin(rad) * orbitRadius;
+              const posY = -Math.cos(rad) * orbitRadius;
 
-                return (
-                  <button
-                    key={item.slot}
-                    type="button"
-                    onClick={() => stepToDish(idx)}
-                    className={`absolute flex flex-col items-center justify-center cursor-pointer will-change-transform ${
-                      isActive
-                        ? "z-30 scale-120 sm:scale-130 opacity-100 drop-shadow-2xl"
-                        : "z-10 scale-85 sm:scale-92 opacity-50 hover:opacity-95 hover:scale-105"
-                    }`}
-                    style={{
-                      left: `calc(50% + ${posX}px)`,
-                      top: `calc(50% + ${posY}px)`,
-                      transform: "translate(-50%, -50%)",
-                      transition: "transform 0.35s cubic-bezier(0.34, 1.45, 0.64, 1), opacity 0.25s ease, filter 0.25s ease",
-                    }}
-                  >
-                    <div className="relative group flex flex-col items-center">
-                      {isActive && (
-                        <div className="absolute -inset-3 rounded-full bg-accent/25 blur-lg -z-10 animate-pulse" />
-                      )}
-                      <img
-                        src={item.food.image}
-                        alt={item.food.name}
-                        loading="eager"
-                        draggable={false}
-                        className={`clock-shadow w-auto object-contain transition-transform duration-300 ${
-                          isMobile
-                            ? isActive ? "h-22 max-w-[105px]" : "h-13 max-w-[60px]"
-                            : isActive ? "h-30 max-w-[150px] sm:h-38 sm:max-w-[180px]" : "h-15 max-w-[75px] sm:h-18 sm:max-w-[85px]"
-                        } ${isActive ? "animate-float-slow" : ""}`}
-                      />
-
+              return (
+                <button
+                  key={item.slot}
+                  type="button"
+                  onClick={() => {
+                    if (isActive) {
+                      window.location.href = `/menu?item=${item.food.id}`;
+                    } else {
+                      stepToDish(idx);
+                    }
+                  }}
+                  className={`absolute flex flex-col items-center justify-center cursor-pointer will-change-transform select-none ${
+                    isActive
+                      ? "z-30 scale-130 sm:scale-140 md:scale-150 opacity-100 drop-shadow-[0_25px_45px_rgba(0,0,0,0.8)]"
+                      : "z-10 scale-85 sm:scale-90 md:scale-95 opacity-55 hover:opacity-95 hover:scale-105 drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]"
+                  }`}
+                  style={{
+                    left: `calc(50% + ${posX}px)`,
+                    top: `calc(50% + ${posY}px)`,
+                    transform: "translate(-50%, -50%)",
+                    transition: "transform 0.4s cubic-bezier(0.34, 1.45, 0.64, 1), opacity 0.3s ease, filter 0.3s ease",
+                  }}
+                  aria-label={item.food.name}
+                >
+                  <div className="relative group flex flex-col items-center">
+                    {/* Glowing ambient halo behind active food */}
+                    {isActive && (
                       <div
-                        className={`mt-1 rounded-full whitespace-nowrap transition-all shadow-md ${
-                          isActive
-                            ? "liquid-glass-pill bg-accent/25 text-accent font-bold ring-2 ring-accent/40 text-xs sm:text-sm px-3.5 py-0.5"
-                            : "liquid-glass-pill text-foreground/85 text-[10px] sm:text-xs px-2.5 py-0.5"
-                        }`}
-                      >
-                        <span className="font-semibold">{item.label}</span>
-                        {isActive && <span className="hidden sm:inline"> · {item.title}</span>}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Luxury Liquid Glass Presentation Card for Active Dish */}
-          <div className="relative group/card w-full max-w-md lg:max-w-lg mx-auto">
-            {/* Chromatic glow backdrop */}
-            <div className="pointer-events-none absolute -inset-5 -z-10 rounded-[2.5rem] bg-gradient-to-br from-amber-500/20 via-primary/10 to-accent/25 blur-2xl opacity-80 transition-opacity duration-700 group-hover/card:opacity-100" />
-            <div className="pointer-events-none absolute -top-8 -left-6 -z-10 size-44 rounded-full bg-amber-400/25 blur-3xl animate-pulse" />
-            <div className="pointer-events-none absolute -bottom-6 -right-6 -z-10 size-40 rounded-full bg-accent/25 blur-3xl" />
-
-            <div className="liquid-glass-card rounded-2xl p-5 sm:p-6 transition-all duration-300 overflow-hidden z-20">
-              <div key={activeDish.food.id} className="animate-dish-glide">
-                {/* Specular fluid sheen */}
-                <div className="pointer-events-none absolute -top-1/2 left-0 right-0 h-full bg-gradient-to-b from-white/30 via-transparent to-transparent opacity-60" />
-
-                {/* Header: Time & Service Badge */}
-                <div className="relative flex flex-wrap items-center justify-between gap-2 border-b border-foreground/10 pb-3.5">
-                  <div className="liquid-glass-pill flex items-center gap-2 rounded-full px-3 py-1">
-                    <span className="relative flex size-2.5">
-                      <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-80" />
-                      <span className="relative inline-flex size-2.5 rounded-full bg-accent" />
-                    </span>
-                    <span className="font-mono text-xs sm:text-sm font-bold tracking-wide text-foreground">
-                      {activeDish.label}
-                    </span>
+                        className="absolute -inset-8 rounded-full blur-2xl -z-10 animate-pulse transition-all duration-700"
+                        style={{ backgroundColor: activeDish.glowColor }}
+                      />
+                    )}
+                    <img
+                      src={item.food.image}
+                      alt={item.food.name}
+                      loading="eager"
+                      draggable={false}
+                      className={`w-auto object-contain transition-all duration-300 pointer-events-none ${
+                        screenSize === "mobile"
+                          ? isActive ? "h-28 max-w-[140px]" : "h-13 max-w-[65px]"
+                          : screenSize === "tablet"
+                          ? isActive ? "h-40 max-w-[200px]" : "h-18 max-w-[90px]"
+                          : isActive ? "h-52 max-w-[260px]" : "h-24 max-w-[120px]"
+                      } ${isActive ? "animate-float-slow" : ""}`}
+                    />
                   </div>
-                  <span className="liquid-glass-pill rounded-full border border-accent/40 bg-accent/15 px-3 py-1 text-[11px] sm:text-xs font-bold uppercase tracking-widest text-accent shadow-sm">
-                    {activeDish.title}
-                  </span>
-                </div>
-
-                {/* Dish Title & Description */}
-                <div className="relative mt-4">
-                  <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-primary/80">
-                    {activeDish.food.cuisine}
-                  </p>
-                  <h3 className="mt-1 font-display text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
-                    {activeDish.food.name}
-                  </h3>
-                  <p className="mt-1 font-display text-xs sm:text-sm italic text-foreground/75">
-                    {activeDish.food.subtitle}
-                  </p>
-                  <p className="mt-2.5 text-xs sm:text-sm leading-relaxed text-foreground/85 line-clamp-3">
-                    {activeDish.food.description}
-                  </p>
-                </div>
-
-                {/* Frosted Badges */}
-                <div className="relative mt-4 flex flex-wrap items-center gap-2">
-                  {activeDish.food.prepTime && (
-                    <span className="liquid-glass-pill rounded-lg px-2.5 py-1 text-xs font-semibold text-foreground/90">
-                      ⏱ {activeDish.food.prepTime}
-                    </span>
-                  )}
-                  {activeDish.food.calories && (
-                    <span className="liquid-glass-pill rounded-lg px-2.5 py-1 text-xs font-semibold text-foreground/90">
-                      🔥 {activeDish.food.calories}
-                    </span>
-                  )}
-                  {activeDish.food.badges.map((b) => (
-                    <span key={b} className="liquid-glass-pill rounded-lg px-2.5 py-1 text-xs font-medium text-foreground/90">
-                      {b}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Details & Menu Action */}
-                <div className="relative mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-foreground/10 pt-4">
-                  <div>
-                    <p className="text-[10px] sm:text-xs font-semibold text-foreground/60 uppercase tracking-wider">Experience</p>
-                    <p className="font-display text-lg sm:text-xl font-medium tracking-tight text-foreground/90">
-                      Bistro Specialty
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      asChild
-                      size="default"
-                      className="relative overflow-hidden rounded-xl bg-gradient-to-b from-primary to-primary/90 hover:from-primary/95 hover:to-primary text-primary-foreground border border-accent/40 shadow-lg px-6 py-2.5 text-sm font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group"
-                    >
-                      <Link to="/menu" search={{ item: activeDish.food.id }} className="flex items-center gap-1.5">
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full duration-700 transition-transform" />
-                        <span>View in Menu</span>
-                        <ArrowRight className="size-4 text-accent" />
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Modernized Floating Control Dock with 11 Position Indicators */}
-        <div className="relative z-30 mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-1 sm:gap-2 rounded-full border border-border/60 bg-background/85 px-3 sm:px-4 py-1.5 shadow-md backdrop-blur-md dark:border-white/10 dark:bg-card/90">
+        {/* Minimal Modern Floating Control Dock */}
+        <div className="relative z-30 mt-4 sm:mt-6 flex items-center justify-center gap-1.5 sm:gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 shadow-xl backdrop-blur-xl transition-all duration-700">
           <Button
             size="icon"
             variant="ghost"
-            className="size-7 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30"
+            className="size-7 rounded-full text-white/60 hover:text-white hover:bg-white/10 disabled:opacity-20"
             onClick={handlePrevDish}
             disabled={activeDishIndex === 0}
-            aria-label="Previous dish"
+            aria-label="Previous"
           >
             <ChevronLeft className="size-4" />
           </Button>
 
           <Button
             size="sm"
-            variant={isAutoPlaying ? "accent" : "ghost"}
-            className="h-7 rounded-full px-2.5 text-xs font-medium gap-1.5"
+            variant="ghost"
+            className="h-7 rounded-full px-2.5 text-xs font-medium gap-1 text-white/80 hover:text-white hover:bg-white/10 transition-colors"
             onClick={() => setIsAutoPlaying(!isAutoPlaying)}
           >
             {isAutoPlaying ? <Pause className="size-3" /> : <Play className="size-3" />}
             <span>{isAutoPlaying ? "Pause" : "Auto"}</span>
           </Button>
 
-          <span className="h-3.5 w-px bg-border/60 mx-0.5" />
+          <span className="h-3 w-px bg-white/20 mx-0.5" />
 
-          {/* Active dish & time slot display */}
-          <div className="flex items-center gap-1.5 px-1.5 text-xs">
-            <span className="font-semibold text-foreground">{activeDish.label}</span>
-            <span className="text-muted-foreground hidden sm:inline max-w-[170px] truncate">· {activeDish.food.name}</span>
-            <span className="font-mono text-[10px] text-accent/80 font-bold">({activeDishIndex + 1}/{clockDishes.length})</span>
-          </div>
-
-          {/* 11 Golden Indicator Dots */}
-          <div className="hidden md:flex items-center gap-1.5 px-1.5">
+          {/* 11 Dish Progress Dots with Active Accent Color */}
+          <div className="flex items-center gap-1.5 px-1.5">
             {clockDishes.map((_, dotIdx) => (
               <button
                 key={dotIdx}
@@ -1136,33 +1446,26 @@ export function CulinaryClock({ hours }: { hours: string }) {
                 onClick={() => stepToDish(dotIdx)}
                 className={`size-2 rounded-full transition-all duration-300 cursor-pointer ${
                   dotIdx === activeDishIndex
-                    ? "bg-accent scale-135 shadow-[0_0_8px_var(--color-accent)] ring-1 ring-accent"
-                    : "bg-foreground/20 hover:bg-foreground/50"
+                    ? "scale-140 shadow-xs ring-1 ring-white/50"
+                    : "bg-white/25 hover:bg-white/60"
                 }`}
-                aria-label={`Go to dish ${dotIdx + 1}`}
+                style={{
+                  backgroundColor: dotIdx === activeDishIndex ? activeDish.accentColor : undefined,
+                }}
+                aria-label={`Dish ${dotIdx + 1}`}
               />
             ))}
           </div>
 
-          <span className="h-3.5 w-px bg-border/60 mx-0.5" />
-
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 rounded-full px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
-            onClick={() => setSpeedMultiplier((s) => (s === 1 ? 2 : 1))}
-            title="Toggle speed"
-          >
-            {speedMultiplier === 1 ? "1x" : "2x"}
-          </Button>
+          <span className="h-3 w-px bg-white/20 mx-0.5" />
 
           <Button
             size="icon"
             variant="ghost"
-            className="size-7 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30"
+            className="size-7 rounded-full text-white/60 hover:text-white hover:bg-white/10 disabled:opacity-20"
             onClick={handleNextDish}
             disabled={activeDishIndex === clockDishes.length - 1}
-            aria-label="Next dish"
+            aria-label="Next"
           >
             <ChevronRight className="size-4" />
           </Button>
@@ -1268,311 +1571,6 @@ export function InternationalShowcase() {
   );
 }
 
-/* 6 — Dynamic food-matching floating elements that morph based on the active dish */
-const BOTANICALS = Array.from({ length: 24 }, (_, i) => ({
-  left: (i * 37) % 100,
-  top: (i * 53) % 100,
-  size: 26 + ((i * 7) % 22),
-  dur: 9 + ((i * 5) % 10),
-  delay: -((i * 3) % 12),
-  rot: (i * 47) % 360,
-  variant: i % 4,
-}));
-
-function FoodParticle({ theme, variant }: { theme: string; variant: number }) {
-  switch (theme) {
-    case "pizza": {
-      // 0: Spicy Pepperoni Slice, 1: Fresh Basil Leaf, 2: Black Olive Ring, 3: Chili Pepper Flake
-      if (variant === 0) {
-        return (
-          <g>
-            {/* Pepperoni wheel with slight crisp edge */}
-            <circle cx="16" cy="16" r="13" fill="#dc2626" opacity="0.95" />
-            <circle cx="16" cy="16" r="11" fill="#b91c1c" />
-            <circle cx="12" cy="11" r="1.3" fill="#7f1d1d" />
-            <circle cx="20" cy="13" r="1.5" fill="#fca5a5" opacity="0.7" />
-            <circle cx="14" cy="20" r="1.2" fill="#7f1d1d" />
-            <circle cx="18" cy="18" r="1" fill="#fca5a5" opacity="0.6" />
-          </g>
-        );
-      }
-      if (variant === 1) {
-        return (
-          <g>
-            {/* Fresh Italian Basil leaf */}
-            <path d="M16 3 C25 9, 27 23, 16 29 C5 23, 7 9, 16 3 Z" fill="#22c55e" opacity="0.95" />
-            <path d="M16 5 L16 27" stroke="#15803d" strokeWidth="1.2" fill="none" />
-            <path d="M16 11 Q21 14 24 15 M16 18 Q20 20 23 23 M16 11 Q11 14 8 15 M16 18 Q12 20 9 23" stroke="#15803d" strokeWidth="0.8" fill="none" opacity="0.6" />
-          </g>
-        );
-      }
-      if (variant === 2) {
-        return (
-          <g>
-            {/* Sliced Black Kalamata Olive Ring */}
-            <path
-              d="M16 4 C22.6 4 28 9.4 28 16 C28 22.6 22.6 28 16 28 C9.4 28 4 22.6 4 16 C4 9.4 9.4 4 16 4 Z M16 11 C13.2 11 11 13.2 11 16 C11 18.8 13.2 21 16 21 C18.8 21 21 18.8 21 16 C21 13.2 18.8 11 16 11 Z"
-              fill="#292524"
-              opacity="0.9"
-            />
-            <circle cx="16" cy="16" r="11" stroke="#44403c" strokeWidth="1" fill="none" opacity="0.6" />
-          </g>
-        );
-      }
-      return (
-        <g>
-          {/* Red Chili Pepper Flake with golden seed */}
-          <path d="M9 8 C15 6, 24 11, 23 20 C20 25, 12 25, 9 21 C6 17, 6 11, 9 8 Z" fill="#ef4444" opacity="0.95" />
-          <circle cx="15" cy="17" r="2.2" fill="#fef08a" opacity="0.9" />
-          <circle cx="15" cy="17" r="1.2" fill="#ca8a04" />
-        </g>
-      );
-    }
-
-    case "coffee": {
-      // 0: Whole Roasted Coffee Bean (Vertical), 1: Tilted Roast Bean, 2: Cinnamon Star, 3: Golden Crema Drop
-      if (variant === 0) {
-        return (
-          <g>
-            {/* Rich whole roasted coffee bean */}
-            <ellipse cx="16" cy="16" rx="9" ry="14" fill="#3b1706" opacity="0.95" />
-            <ellipse cx="16" cy="16" rx="7.8" ry="12.5" fill="#5c2608" opacity="0.9" />
-            {/* Center cleft line */}
-            <path d="M16 4 Q12.5 12 18 16 Q12.5 20 16 28" stroke="#1f0a02" strokeWidth="2.2" strokeLinecap="round" fill="none" />
-            <path d="M11 9 Q8 16 11 23" stroke="#d97706" strokeWidth="0.8" opacity="0.4" fill="none" />
-          </g>
-        );
-      }
-      if (variant === 1) {
-        return (
-          <g>
-            {/* Angled Espresso Bean */}
-            <ellipse cx="16" cy="16" rx="14" ry="9" fill="#2d1204" opacity="0.95" />
-            <ellipse cx="16" cy="16" rx="12.5" ry="7.8" fill="#4d1d05" opacity="0.9" />
-            <path d="M4 16 Q12 12.5 16 18 Q20 12.5 28 16" stroke="#170601" strokeWidth="2" strokeLinecap="round" fill="none" />
-            <path d="M9 11 Q16 8 23 11" stroke="#f59e0b" strokeWidth="0.8" opacity="0.35" fill="none" />
-          </g>
-        );
-      }
-      if (variant === 2) {
-        return (
-          <g>
-            {/* Cinnamon Star Anise pod */}
-            <path d="M16 4 L18.5 11.5 L26 12 L20.5 17 L22 25 L16 20.5 L10 25 L11.5 17 L6 12 L13.5 11.5 Z" fill="#78350f" opacity="0.9" />
-            <circle cx="16" cy="16" r="3.2" fill="#451a03" />
-            <circle cx="16" cy="16" r="1.5" fill="#fde047" opacity="0.6" />
-          </g>
-        );
-      }
-      return (
-        <g>
-          {/* Golden espresso crema droplet */}
-          <path d="M16 5 C22 13, 23 22, 16 27 C9 22, 10 13, 16 5 Z" fill="#d97706" opacity="0.9" />
-          <ellipse cx="16" cy="19" rx="3.5" ry="4.5" fill="#f59e0b" opacity="0.8" />
-          <circle cx="14" cy="16" r="1.2" fill="#ffffff" opacity="0.6" />
-        </g>
-      );
-    }
-
-    case "iced-coffee": {
-      // 0: Coffee Bean, 1: Translucent Ice Crystal Cube, 2: Caramel Swirl Ribbon, 3: Angled Bean
-      if (variant === 0) {
-        return (
-          <g>
-            <ellipse cx="16" cy="16" rx="9" ry="14" fill="#3b1706" opacity="0.95" />
-            <ellipse cx="16" cy="16" rx="7.5" ry="12" fill="#5c2608" opacity="0.9" />
-            <path d="M16 4 Q12.5 12 18 16 Q12.5 20 16 28" stroke="#1f0a02" strokeWidth="2" strokeLinecap="round" fill="none" />
-          </g>
-        );
-      }
-      if (variant === 1) {
-        return (
-          <g>
-            {/* Translucent Ice Crystal Cube */}
-            <polygon points="16,4 26,10 16,16 6,10" fill="#e0f2fe" opacity="0.9" />
-            <polygon points="6,10 16,16 16,28 6,22" fill="#bae6fd" opacity="0.75" />
-            <polygon points="26,10 16,16 16,28 26,22" fill="#7dd3fc" opacity="0.85" />
-            <path d="M16 16 L16 28 M16 16 L26 10 M16 16 L6 10" stroke="#ffffff" strokeWidth="1.2" opacity="0.9" />
-          </g>
-        );
-      }
-      if (variant === 2) {
-        return (
-          <g>
-            {/* Caramel swirl drop */}
-            <path d="M16 4 C24 10, 24 22, 16 28 C10 24, 8 16, 16 4 Z" fill="#b45309" opacity="0.9" />
-            <path d="M14 9 Q19 16 15 23" stroke="#fcd34d" strokeWidth="1.8" strokeLinecap="round" fill="none" opacity="0.85" />
-          </g>
-        );
-      }
-      return (
-        <g>
-          <ellipse cx="16" cy="16" rx="13" ry="8.5" fill="#2d1204" opacity="0.95" />
-          <path d="M4 16 Q12 12.5 16 18 Q20 12.5 28 16" stroke="#170601" strokeWidth="2" strokeLinecap="round" fill="none" />
-        </g>
-      );
-    }
-
-    case "salmon": {
-      // 0: Fresh Lemon Wheel, 1: Dill Frond, 2: Pink Peppercorn, 3: Rosemary Sprig
-      if (variant === 0) {
-        return (
-          <g>
-            {/* Translucent Citrus / Lemon Wheel */}
-            <circle cx="16" cy="16" r="13" fill="#facc15" opacity="0.9" />
-            <circle cx="16" cy="16" r="11" fill="#fef08a" />
-            <circle cx="16" cy="16" r="2" fill="#ca8a04" />
-            <path d="M16 6 L16 14 M16 18 L16 26 M6 16 L14 16 M18 16 L26 16 M9 9 L14 14 M18 18 L23 23 M9 23 L14 18 M18 14 L23 9" stroke="#eab308" strokeWidth="1" opacity="0.8" />
-          </g>
-        );
-      }
-      if (variant === 1) {
-        return (
-          <g>
-            {/* Feathery Dill Herb Frond */}
-            <path d="M5 27 Q14 17 25 5" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" fill="none" />
-            <path d="M10 21 Q16 20 19 14 M14 16 Q19 12 22 9 M8 23 Q12 19 16 17 M17 12 Q20 8 23 7" stroke="#4ade80" strokeWidth="1.3" strokeLinecap="round" fill="none" />
-          </g>
-        );
-      }
-      if (variant === 2) {
-        return (
-          <g>
-            {/* Pink Peppercorn / Sea Berry */}
-            <circle cx="16" cy="16" r="9" fill="#fb7185" opacity="0.95" />
-            <circle cx="13" cy="13" r="2.8" fill="#fecdd3" opacity="0.8" />
-            <circle cx="16" cy="16" r="7" stroke="#e11d48" strokeWidth="0.8" fill="none" opacity="0.4" />
-          </g>
-        );
-      }
-      return (
-        <g>
-          {/* Fresh Rosemary / Herb Needle */}
-          <path d="M16 2 C21 8, 22 22, 16 30 C10 22, 11 8, 16 2 Z" fill="#16a34a" opacity="0.9" />
-          <path d="M16 4 L16 28" stroke="#15803d" strokeWidth="1.2" fill="none" />
-        </g>
-      );
-    }
-
-    case "steak": {
-      // 0: Fresh Rosemary Sprig, 1: Whole Black Peppercorn, 2: Garlic Clove Petal, 3: Cabernet Wine Ember
-      if (variant === 0) {
-        return (
-          <g>
-            {/* Rosemary Stem & Needle leaves */}
-            <path d="M16 3 L16 29" stroke="#15803d" strokeWidth="1.6" strokeLinecap="round" />
-            <path d="M16 7 L24 4 M16 7 L8 4 M16 13 L25 9 M16 13 L7 9 M16 19 L24 15 M16 19 L8 15 M16 24 L23 21 M16 24 L9 21" stroke="#22c55e" strokeWidth="1.4" strokeLinecap="round" />
-          </g>
-        );
-      }
-      if (variant === 1) {
-        return (
-          <g>
-            {/* Whole Black Peppercorn */}
-            <circle cx="16" cy="16" r="9" fill="#18181b" stroke="#3f3f46" strokeWidth="1.2" />
-            <circle cx="13" cy="13" r="1.8" fill="#71717a" opacity="0.8" />
-            <circle cx="19" cy="19" r="1.4" fill="#52525b" opacity="0.7" />
-          </g>
-        );
-      }
-      if (variant === 2) {
-        return (
-          <g>
-            {/* Sliced Garlic Petal */}
-            <path d="M10 6 C19 4, 26 12, 23 22 C21 27, 12 28, 8 23 C5 18, 5 10, 10 6 Z" fill="#fef9c3" stroke="#fde047" strokeWidth="1.2" opacity="0.95" />
-            <path d="M12 11 Q16 18 15 23" stroke="#facc15" strokeWidth="0.8" fill="none" opacity="0.6" />
-          </g>
-        );
-      }
-      return (
-        <g>
-          {/* Cabernet Red Wine Ember */}
-          <path d="M16 4 C23 13, 24 22, 16 27 C8 22, 9 13, 16 4 Z" fill="#881337" opacity="0.95" />
-          <circle cx="14" cy="19" r="2.8" fill="#f43f5e" opacity="0.75" />
-        </g>
-      );
-    }
-
-    case "pasta": {
-      // 0: Wavy Fettuccine Ribbon, 1: Shaved Parmesan Curl, 2: Fresh Basil Leaf, 3: Cherry Tomato
-      if (variant === 0) {
-        return (
-          <g>
-            {/* Golden Fettuccine Ribbon */}
-            <path d="M6 6 Q14 14 10 20 Q6 26 18 28" stroke="#facc15" strokeWidth="3.2" strokeLinecap="round" fill="none" opacity="0.95" />
-            <path d="M8 7 Q15 14 11 20" stroke="#fef08a" strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.7" />
-          </g>
-        );
-      }
-      if (variant === 1) {
-        return (
-          <g>
-            {/* Shaved Parmesan Cheese Curl */}
-            <path d="M7 10 Q19 5 26 15 Q18 25 8 18 Z" fill="#fef08a" stroke="#ca8a04" strokeWidth="0.8" opacity="0.9" />
-            <path d="M11 13 Q17 10 22 16" stroke="#ca8a04" strokeWidth="0.6" fill="none" opacity="0.5" />
-          </g>
-        );
-      }
-      if (variant === 2) {
-        return (
-          <g>
-            <path d="M16 3 C25 9, 27 23, 16 29 C5 23, 7 9, 16 3 Z" fill="#22c55e" opacity="0.95" />
-            <path d="M16 4 L16 28" stroke="#15803d" strokeWidth="1" fill="none" />
-          </g>
-        );
-      }
-      return (
-        <g>
-          <circle cx="16" cy="16" r="10" fill="#ef4444" opacity="0.95" />
-          <circle cx="13" cy="12" r="2.6" fill="#fca5a5" opacity="0.7" />
-          <path d="M16 6 L13 3 M16 6 L19 3 M16 6 L16 2" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" />
-        </g>
-      );
-    }
-
-    case "salad":
-    default: {
-      // 0: Arugula Leaf, 1: Cucumber Slice, 2: Tender Mint Leaf, 3: Cherry Tomato
-      if (variant === 0) {
-        return (
-          <g>
-            {/* Crisp Arugula Leaf */}
-            <path d="M16 2 C22 6, 24 14, 21 18 C24 21, 23 27, 16 30 C9 27, 8 21, 11 18 C8 14, 10 6, 16 2 Z" fill="#22c55e" opacity="0.9" />
-            <path d="M16 4 L16 28" stroke="#16a34a" strokeWidth="1.2" fill="none" />
-          </g>
-        );
-      }
-      if (variant === 1) {
-        return (
-          <g>
-            {/* Fresh Cucumber Slice */}
-            <circle cx="16" cy="16" r="12" fill="#86efac" opacity="0.8" stroke="#22c55e" strokeWidth="1.6" />
-            <circle cx="16" cy="16" r="6" fill="#dcfce7" opacity="0.7" />
-            <circle cx="16" cy="16" r="2" fill="#15803d" opacity="0.4" />
-          </g>
-        );
-      }
-      if (variant === 2) {
-        return (
-          <g>
-            {/* Fresh Mint Leaf */}
-            <path d="M16 4 C22 9, 23 21, 16 28 C9 21, 10 9, 16 4 Z" fill="#4ade80" opacity="0.9" />
-            <path d="M16 5 L16 26" stroke="#16a34a" strokeWidth="1" fill="none" opacity="0.7" />
-          </g>
-        );
-      }
-      return (
-        <g>
-          {/* Cherry Tomato */}
-          <circle cx="16" cy="16" r="9.5" fill="#f87171" opacity="0.95" />
-          <circle cx="13" cy="12" r="2.2" fill="#fee2e2" opacity="0.8" />
-          <path d="M16 6 L14 3 M16 6 L18 3" stroke="#22c55e" strokeWidth="1.4" strokeLinecap="round" />
-        </g>
-      );
-    }
-  }
-}
-
 const BOTANICAL_DISHES = [
   {
     id: "f9999999-9999-4999-a999-499999999999",
@@ -1661,9 +1659,88 @@ const BOTANICAL_DISHES = [
 ];
 
 export function CulinaryBotanicals({ s }: { s: Settings }) {
+  const sectionRef = useRef<HTMLElement>(null);
   const [m, setM] = useState({ x: 0, y: 0 });
   const [activeIdx, setActiveIdx] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+
+  const activeIdxRef = useRef(activeIdx);
+  useEffect(() => {
+    activeIdxRef.current = activeIdx;
+  }, [activeIdx]);
+
+  const lastScrollTime = useRef<number>(0);
+  const accumulatedDelta = useRef<number>(0);
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Scroll / Mouse Wheel driven dish switching
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    const SCROLL_THRESHOLD = 45;
+    const COOLDOWN_MS = 280;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Ignore mostly horizontal scrolling gestures
+      if (Math.abs(e.deltaY) < Math.abs(e.deltaX) * 0.8) return;
+
+      const currentIdx = activeIdxRef.current;
+      const isAtEnd = currentIdx >= BOTANICAL_DISHES.length - 1;
+      const isAtStart = currentIdx <= 0;
+
+      // When scrolling down at the final dish (cycle completed):
+      // Allow native page scroll to pass through and continue down towards the footer!
+      if (e.deltaY > 0 && isAtEnd) {
+        accumulatedDelta.current = 0;
+        return;
+      }
+
+      // When scrolling up at the first dish:
+      // Allow native page scroll to pass through and continue up!
+      if (e.deltaY < 0 && isAtStart) {
+        accumulatedDelta.current = 0;
+        return;
+      }
+
+      // Within the cycle: intercept wheel to switch the botanical dish
+      e.preventDefault();
+
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current);
+      }
+      resetTimerRef.current = setTimeout(() => {
+        accumulatedDelta.current = 0;
+      }, 220);
+
+      const now = Date.now();
+      if (now - lastScrollTime.current < COOLDOWN_MS) {
+        return;
+      }
+
+      accumulatedDelta.current += e.deltaY;
+
+      if (accumulatedDelta.current >= SCROLL_THRESHOLD) {
+        lastScrollTime.current = now;
+        accumulatedDelta.current = 0;
+        setActiveIdx((prev) => Math.min(BOTANICAL_DISHES.length - 1, prev + 1));
+        setIsPaused(true);
+      } else if (accumulatedDelta.current <= -SCROLL_THRESHOLD) {
+        lastScrollTime.current = now;
+        accumulatedDelta.current = 0;
+        setActiveIdx((prev) => Math.max(0, prev - 1));
+        setIsPaused(true);
+      }
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", handleWheel);
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (isPaused) return;
@@ -1677,6 +1754,7 @@ export function CulinaryBotanicals({ s }: { s: Settings }) {
 
   return (
     <section
+      ref={sectionRef}
       className="relative isolate overflow-hidden border-t border-border/40 text-white backdrop-blur-xl transition-colors duration-1000 ease-in-out"
       style={{
         backgroundColor: activeDish.boardColor,
@@ -1768,24 +1846,31 @@ export function CulinaryBotanicals({ s }: { s: Settings }) {
             <span className="text-white/80 group-hover/pill:text-white transition-colors">View in Menu &rarr;</span>
           </Link>
 
-          {/* Subtle navigation dots */}
-          <div className="mt-3 flex items-center gap-1.5">
-            {BOTANICAL_DISHES.map((d, dotIdx) => (
-              <button
-                key={d.id}
-                type="button"
-                onClick={() => setActiveIdx(dotIdx)}
-                className={`size-2 rounded-full transition-all duration-300 cursor-pointer ${
-                  dotIdx === activeIdx
-                    ? "scale-130 shadow-xs ring-2 ring-white/60"
-                    : "opacity-35 hover:opacity-75"
-                }`}
-                style={{
-                  backgroundColor: dotIdx === activeIdx ? activeDish.accentColor : "white",
-                }}
-                aria-label={`Show ${d.name}`}
-              />
-            ))}
+          {/* Subtle navigation dots & cycle indicator */}
+          <div className="mt-3 flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              {BOTANICAL_DISHES.map((d, dotIdx) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => setActiveIdx(dotIdx)}
+                  className={`size-2 rounded-full transition-all duration-300 cursor-pointer ${
+                    dotIdx === activeIdx
+                      ? "scale-130 shadow-xs ring-2 ring-white/60"
+                      : "opacity-35 hover:opacity-75"
+                  }`}
+                  style={{
+                    backgroundColor: dotIdx === activeIdx ? activeDish.accentColor : "white",
+                  }}
+                  aria-label={`Show ${d.name}`}
+                />
+              ))}
+            </div>
+            {activeIdx >= BOTANICAL_DISHES.length - 1 && (
+              <span className="text-[10px] text-white/70 font-medium animate-pulse">
+                · Cycle complete
+              </span>
+            )}
           </div>
         </div>
 

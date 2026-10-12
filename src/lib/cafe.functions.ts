@@ -257,7 +257,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       console.warn("[Prisma] Order recorded in-session (PostgreSQL offline):", err);
     }
 
-    return { token };
+    return { token, orderNumber };
   });
 
 export const getOrderByToken = createServerFn({ method: "GET" })

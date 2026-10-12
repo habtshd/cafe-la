@@ -410,4 +410,41 @@ html, body {
     inset 0 -3px 5px rgba(0, 0, 0, 0.5);
 }
 
+/* Glassmorphic Modal & Dialog: 70% transparent #2A2A2A with optical blur in dark mode */
+.glass-modal {
+  background: rgba(252, 247, 233, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(210, 190, 160, 0.45);
+  box-shadow:
+    0 25px 50px -12px rgba(45, 30, 15, 0.15),
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.9);
+}
+
+.dark .glass-modal {
+  background: rgba(42, 42, 42, 0.70);
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 30px 60px -12px rgba(0, 0, 0, 0.7),
+    0 12px 24px -8px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.18);
+}
+
+/* Hide ugly browser scrollbars inside modals & dialogs */
+.glass-modal,
+.glass-modal * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.glass-modal::-webkit-scrollbar,
+.glass-modal *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+
+
 

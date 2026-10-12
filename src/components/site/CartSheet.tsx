@@ -39,7 +39,7 @@ export function CartSheet() {
           </div>
         ) : (
           <>
-            <ul className="-mx-6 flex-1 space-y-3 overflow-y-auto px-6 py-4">
+            <ul className="-mx-6 flex-1 space-y-3 overflow-y-auto px-6 py-4 scrollbar-none no-scrollbar">
               {cart.lines.map((l) => (
                 <li
                   key={l.key}

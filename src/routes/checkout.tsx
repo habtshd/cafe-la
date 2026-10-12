@@ -70,6 +70,18 @@ function Checkout() {
         },
       });
       cart.clear();
+      try {
+        const existing = JSON.parse(localStorage.getItem("ln-recent-orders") || "[]");
+        const updated = [
+          {
+            orderNumber: res.orderNumber || "LN-Order",
+            token: res.token,
+            createdAt: new Date().toISOString(),
+          },
+          ...existing.filter((item: { token: string }) => item.token !== res.token),
+        ].slice(0, 8);
+        localStorage.setItem("ln-recent-orders", JSON.stringify(updated));
+      } catch {}
       navigate({ to: "/order/$token", params: { token: res.token }, search: { new: true } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message.replace(/^\[.*?\]\s*/, "") : "Couldn't place order");
